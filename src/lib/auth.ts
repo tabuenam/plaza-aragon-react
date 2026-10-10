@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const getCurrentUser = cache(async () => {
@@ -17,6 +18,7 @@ export const getCurrentUser = cache(async () => {
 });
 
 export async function requireUser() {
+  await connection();
   const user = await getCurrentUser();
   if (!user) redirect("/ingresar");
   return user;

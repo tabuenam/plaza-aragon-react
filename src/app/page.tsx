@@ -1,10 +1,12 @@
-import Link from "next/link";
+import { Logo } from "@/components/logo";
+import { SpaceGallery } from "@/components/space-gallery";
+import { StatusBadge } from "@/components/status-badge";
 import { getPublicSpaces } from "@/lib/data";
 import { formatMoney } from "@/lib/format";
-import { Logo } from "@/components/logo";
-import { StatusBadge } from "@/components/status-badge";
-import { SpaceGallery } from "@/components/space-gallery";
 import type { Space } from "@/lib/types";
+import Link from "next/link";
+
+export const instant = false;
 
 const fallbackSpaces: Space[] = [
   {
@@ -90,7 +92,7 @@ export default async function HomePage() {
                 Espacios comerciales diseñados para hacer crecer su negocio.
               </h1>
               <p className="mt-4 text-base leading-relaxed text-crema/90 sm:text-lg">
-                Ubicación céntrica, acabados de primera y contratos accesibles de 6 a 12 meses en Plaza Aragón.
+                Ubicación céntrica, acabados de primera y contratos accesibles de 3 a 12 meses en Plaza Aragón.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <a
@@ -124,7 +126,7 @@ export default async function HomePage() {
                 <p className="mt-1 text-xs font-medium text-crema/80 uppercase tracking-wider">En construcción</p>
               </div>
               <div>
-                <p className="font-display text-2xl font-bold text-white sm:text-3xl">6-12</p>
+                <p className="font-display text-2xl font-bold text-white sm:text-3xl">3-12</p>
                 <p className="mt-1 text-xs font-medium text-crema/80 uppercase tracking-wider">Meses de contrato</p>
               </div>
             </div>

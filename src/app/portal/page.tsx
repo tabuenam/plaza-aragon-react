@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { requireTenant } from "@/lib/auth";
 import { getTenantLeaseWithSpace, getTenantPayments } from "@/lib/data";
 import { formatDate, formatMoney, formatPeriod } from "@/lib/format";
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function TenantPortalPage() {
+  await connection();
   const user = await requireTenant();
   const lease = await getTenantLeaseWithSpace(user.id);
 

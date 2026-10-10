@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { getAdminPayments, getAllSpacesWithActiveLease } from "@/lib/data";
 import { currentPeriod, formatMoney, formatPeriod } from "@/lib/format";
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminOverviewPage() {
+  await connection();
   await requireAdmin();
 
   const cur = currentPeriod();

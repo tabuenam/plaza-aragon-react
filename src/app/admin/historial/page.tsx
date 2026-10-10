@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { getAdminPayments } from "@/lib/data";
 import { currentPeriod, formatDate, formatMoney, formatPeriod } from "@/lib/format";
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
 export default async function AdminHistorialPage(props: { searchParams: SearchParams }) {
+  await connection();
   await requireAdmin();
 
   const searchParams = await props.searchParams;
