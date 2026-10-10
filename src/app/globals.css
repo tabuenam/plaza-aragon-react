@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@theme {
+  --color-azul: #0d4a7a;
+  --color-azul-oscuro: #082f4f;
+  --color-turquesa: #1fa9c4;
+  --color-turquesa-claro: #dcf2f7;
+  --color-barro: #b9542a;
+  --color-barro-claro: #f7e2d5;
+  --color-maiz: #e5a82a;
+  --color-maiz-claro: #fcf0d2;
+  --color-selva: #2a6547;
+  --color-selva-claro: #dbeee2;
+  --color-arena: #faf6ef;
+  --color-crema: #efe5d4;
+  --color-tinta: #1d2733;
+  --color-piedra: #5b6673;
+}
+
+@utility lenca-band {
+  background-color: var(--color-arena);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='12' viewBox='0 0 48 12'%3E%3Cpath d='M0 12L6 0l6 12z' fill='%23b9542a'/%3E%3Cpath d='M12 0l6 12 6-12z' fill='%23e5a82a'/%3E%3Cpath d='M24 12l6-12 6 12z' fill='%230d4a7a'/%3E%3Cpath d='M36 0l6 12 6-12z' fill='%231fa9c4'/%3E%3C/svg%3E");
+  background-size: 48px 100%;
+  background-repeat: repeat-x;
+}
+
+@utility lenca-diamonds {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 4l16 16-16 16L4 20z M20 12l8 8-8 8-8-8z' fill='none' stroke='%23ffffff' stroke-opacity='0.09' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-size: 40px 40px;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-turquesa);
+    outline-offset: 2px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .field {
+    @apply block w-full min-h-12 rounded-xl border border-crema bg-white px-4 py-3 text-base text-tinta shadow-sm transition placeholder:text-piedra/60 focus:border-turquesa focus:outline-none focus:ring-2 focus:ring-turquesa/30;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-semibold text-tinta;
+  }
+
+  .btn {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 bg-azul text-white shadow-sm hover:bg-azul-oscuro;
+  }
+
+  .btn-accent {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 bg-barro text-white shadow-sm hover:bg-barro/90;
+  }
+
+  .btn-ghost {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 border border-crema bg-white text-tinta hover:bg-crema/50;
+  }
+
+  .card {
+    @apply rounded-3xl bg-white p-5 shadow-sm ring-1 ring-crema sm:p-6;
+  }
 }
