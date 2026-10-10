@@ -7,6 +7,7 @@ import { currentPeriod, formatMoney, formatPeriod } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { PaymentReviewCard } from "@/components/payment-review-card";
 import { SpaceStatusForm } from "@/components/space-status-form";
+import { EditSpaceModal } from "@/components/edit-space-modal";
 
 export const metadata: Metadata = {
   title: "Administración",
@@ -115,7 +116,12 @@ export default async function AdminOverviewPage() {
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-display text-lg font-bold text-tinta">{space.name}</h3>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <h3 className="font-display text-lg font-bold text-tinta truncate">{space.name}</h3>
+                    <span className="shrink-0 rounded-md bg-crema/70 px-1.5 py-0.5 text-[10px] font-bold text-piedra">
+                      #{space.sort_order}
+                    </span>
+                  </div>
                   <StatusBadge status={space.status} />
                 </div>
 
@@ -123,6 +129,9 @@ export default async function AdminOverviewPage() {
                   <p>
                     <span className="font-semibold text-tinta">Precio base:</span> {formatMoney(space.price)}
                   </p>
+                  {space.description && (
+                    <p className="line-clamp-2 text-xs text-piedra/90 italic">{space.description}</p>
+                  )}
                   {space.current_lease ? (
                     <div className="rounded-xl bg-white p-2.5 border border-crema space-y-1">
                       <p className="font-semibold text-azul">Inquilino actual:</p>
@@ -135,6 +144,15 @@ export default async function AdminOverviewPage() {
                   ) : (
                     <p className="italic text-piedra">Sin contrato activo actualmente</p>
                   )}
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-crema/60 pt-2.5">
+                  <span className="text-[11px] font-medium text-piedra">
+                    {space.image_urls?.length === 1
+                      ? "1 foto en vitrina"
+                      : `${space.image_urls?.length ?? 0} fotos en vitrina`}
+                  </span>
+                  <EditSpaceModal space={space} />
                 </div>
               </div>
 
