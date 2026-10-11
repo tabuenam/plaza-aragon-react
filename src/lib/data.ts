@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabasePublicClient } from "@/lib/supabase/static";
-import type { LeaseWithRelations, Payment, Space, Tenant } from "@/lib/types";
+import type { AdminLease, LeaseWithRelations, Payment, Space, Tenant } from "@/lib/types";
 
 export async function getPublicSpaces(): Promise<Space[]> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return [];
@@ -127,4 +127,38 @@ export async function getReceiptSignedUrl(path: string): Promise<string | null> 
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.storage.from("receipts").createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
+}
+
+export async function getAllLeases(): Promise<AdminLease[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("leases")
+    .select("*, space:spaces(id, name, status, price), tenant:tenants(id, name, contact_info)")
+    .order("active", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data as unknown as AdminLease[];
+}
+
+export async function getAllTenants(): Promise<Tenant[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("tenants")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error || !data) return [];
+  return data as Tenant[];
+}
+
+export async function getAllSpaces(): Promise<Space[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("spaces")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (error || !data) return [];
+  return data as Space[];
 }

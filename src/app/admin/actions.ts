@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { FormState, SpaceStatus } from "@/lib/types";
 
 export async function verifyPaymentAction(formData: FormData): Promise<void> {
@@ -147,5 +148,221 @@ export async function updateSpaceAction(_prevState: FormState, formData: FormDat
   revalidatePath("/admin");
   revalidatePath("/");
   return { ok: true, message: "Local actualizado exitosamente." };
+}
+
+export async function createLeaseAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const spaceId = String(formData.get("space_id") ?? "");
+  const tenantId = String(formData.get("tenant_id") ?? "");
+  const startDate = String(formData.get("start_date") ?? "").trim();
+  const endDate = String(formData.get("end_date") ?? "").trim();
+  const monthlyRent = Number(formData.get("monthly_rent"));
+
+  if (!spaceId || !tenantId || !startDate || !endDate) {
+    return { ok: false, message: "Todos los campos del contrato son obligatorios." };
+  }
+
+  if (isNaN(monthlyRent) || monthlyRent <= 0) {
+    return { ok: false, message: "La renta mensual debe ser un monto mayor a 0." };
+  }
+
+  if (endDate <= startDate) {
+    return { ok: false, message: "La fecha de finalización debe ser posterior a la fecha de inicio." };
+  }
+
+  const supabase = user.supabase;
+
+  const { data: existingActive } = await supabase
+    .from("leases")
+    .select("id")
+    .eq("space_id", spaceId)
+    .eq("active", true)
+    .maybeSingle();
+
+  if (existingActive) {
+    return {
+      ok: false,
+      message: "Este local ya tiene un contrato activo vigente. Finalice el contrato previo antes de crear uno nuevo.",
+    };
+  }
+
+  const { error: leaseError } = await supabase.from("leases").insert({
+    space_id: spaceId,
+    tenant_id: tenantId,
+    start_date: startDate,
+    end_date: endDate,
+    monthly_rent: monthlyRent,
+    active: true,
+  });
+
+  if (leaseError) {
+    return { ok: false, message: "Error al registrar el contrato de arrendamiento." };
+  }
+
+  await supabase.from("spaces").update({ status: "occupied" }).eq("id", spaceId);
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/contratos");
+  revalidatePath("/");
+  revalidatePath("/portal");
+
+  return { ok: true, message: "Contrato creado exitosamente y disponibilidad del local actualizada a ocupado." };
+}
+
+export async function updateLeaseAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const leaseId = String(formData.get("lease_id") ?? "");
+  const spaceId = String(formData.get("space_id") ?? "");
+  const tenantId = String(formData.get("tenant_id") ?? "");
+  const startDate = String(formData.get("start_date") ?? "").trim();
+  const endDate = String(formData.get("end_date") ?? "").trim();
+  const monthlyRent = Number(formData.get("monthly_rent"));
+  const active = formData.get("active") === "true" || formData.get("active") === "on";
+
+  if (!leaseId || !spaceId || !tenantId || !startDate || !endDate) {
+    return { ok: false, message: "Todos los campos del contrato son obligatorios." };
+  }
+
+  if (isNaN(monthlyRent) || monthlyRent <= 0) {
+    return { ok: false, message: "La renta mensual debe ser un monto mayor a 0." };
+  }
+
+  if (endDate <= startDate) {
+    return { ok: false, message: "La fecha de finalización debe ser posterior a la fecha de inicio." };
+  }
+
+  const supabase = user.supabase;
+
+  const { data: currentLease } = await supabase
+    .from("leases")
+    .select("space_id, active")
+    .eq("id", leaseId)
+    .single();
+
+  if (!currentLease) {
+    return { ok: false, message: "El contrato no existe." };
+  }
+
+  if (active) {
+    const { data: otherActive } = await supabase
+      .from("leases")
+      .select("id")
+      .eq("space_id", spaceId)
+      .eq("active", true)
+      .neq("id", leaseId)
+      .maybeSingle();
+
+    if (otherActive) {
+      return { ok: false, message: "El local seleccionado ya tiene otro contrato activo." };
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from("leases")
+    .update({
+      space_id: spaceId,
+      tenant_id: tenantId,
+      start_date: startDate,
+      end_date: endDate,
+      monthly_rent: monthlyRent,
+      active,
+    })
+    .eq("id", leaseId);
+
+  if (updateError) {
+    return { ok: false, message: "Error al actualizar el contrato." };
+  }
+
+  if (!active && currentLease.active) {
+    await supabase.from("spaces").update({ status: "available" }).eq("id", currentLease.space_id);
+  } else if (active && !currentLease.active) {
+    await supabase.from("spaces").update({ status: "occupied" }).eq("id", spaceId);
+  } else if (active && currentLease.space_id !== spaceId) {
+    await supabase.from("spaces").update({ status: "available" }).eq("id", currentLease.space_id);
+    await supabase.from("spaces").update({ status: "occupied" }).eq("id", spaceId);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/contratos");
+  revalidatePath("/");
+  revalidatePath("/portal");
+
+  return { ok: true, message: "Contrato actualizado exitosamente." };
+}
+
+export async function terminateLeaseAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const leaseId = String(formData.get("lease_id") ?? "");
+
+  if (!leaseId) {
+    return { ok: false, message: "Identificador de contrato no proporcionado." };
+  }
+
+  const supabase = user.supabase;
+  const { data: lease } = await supabase
+    .from("leases")
+    .select("space_id, active")
+    .eq("id", leaseId)
+    .single();
+
+  if (!lease) {
+    return { ok: false, message: "El contrato no fue encontrado." };
+  }
+
+  const { error } = await supabase
+    .from("leases")
+    .update({ active: false })
+    .eq("id", leaseId);
+
+  if (error) {
+    return { ok: false, message: "Error al finalizar el contrato." };
+  }
+
+  await supabase.from("spaces").update({ status: "available" }).eq("id", lease.space_id);
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/contratos");
+  revalidatePath("/");
+  revalidatePath("/portal");
+
+  return { ok: true, message: "Contrato finalizado exitosamente y disponibilidad del local actualizada a disponible." };
+}
+
+export async function createTenantAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const name = String(formData.get("name") ?? "").trim();
+  const contactInfo = String(formData.get("contact_info") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "").trim() || "PlazaAragon2026!";
+
+  if (!name || !email) {
+    return { ok: false, message: "El nombre y el correo electrónico del inquilino son obligatorios." };
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const { data: created, error: authError } = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    app_metadata: { role: "tenant" },
+    user_metadata: { name },
+    email_confirm: true,
+  });
+
+  if (authError || !created?.user) {
+    return { ok: false, message: authError?.message || "No se pudo crear la cuenta del inquilino." };
+  }
+
+  const { error: tenantError } = await adminClient.from("tenants").insert({
+    id: created.user.id,
+    name,
+    contact_info: contactInfo,
+  });
+
+  if (tenantError) {
+    return { ok: false, message: "Usuario creado, pero hubo un error al guardar los datos del inquilino." };
+  }
+
+  revalidatePath("/admin/contratos");
+  return { ok: true, message: "Inquilino registrado exitosamente." };
 }
 

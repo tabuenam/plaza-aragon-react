@@ -44,6 +44,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               Resumen y Locales
             </Link>
             <Link
+              href="/admin/contratos"
+              className="inline-flex min-h-10 shrink-0 items-center rounded-xl px-4 py-2 text-xs font-semibold text-tinta hover:bg-crema/40"
+            >
+              Contratos
+            </Link>
+            <Link
               href="/admin/pagos"
               className="inline-flex min-h-10 shrink-0 items-center rounded-xl px-4 py-2 text-xs font-semibold text-tinta hover:bg-crema/40"
             >

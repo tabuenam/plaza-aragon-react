@@ -99,13 +99,19 @@ export default async function AdminOverviewPage() {
       )}
 
       <section className="card space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-display text-xl font-bold text-azul">Estado de los 5 Locales</h2>
+            <h2 className="font-display text-xl font-bold text-azul">Estado de los Locales</h2>
             <p className="mt-0.5 text-xs text-piedra">
               Supervisión de inquilinos actuales y configuración de disponibilidad.
             </p>
           </div>
+          <Link
+            href="/admin/contratos"
+            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-azul px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-azul-oscuro active:scale-95"
+          >
+            Gestionar Contratos →
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -134,7 +140,15 @@ export default async function AdminOverviewPage() {
                   )}
                   {space.current_lease ? (
                     <div className="rounded-xl bg-white p-2.5 border border-crema space-y-1">
-                      <p className="font-semibold text-azul">Inquilino actual:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-azul">Inquilino actual:</p>
+                        <Link
+                          href="/admin/contratos"
+                          className="text-[11px] font-bold text-azul hover:underline"
+                        >
+                          Ver contrato →
+                        </Link>
+                      </div>
                       <p className="text-tinta font-medium">{space.current_lease.tenant.name}</p>
                       <p className="text-piedra">Tel: {space.current_lease.tenant.contact_info || "Sin número"}</p>
                       <p className="text-azul font-semibold">
@@ -142,7 +156,15 @@ export default async function AdminOverviewPage() {
                       </p>
                     </div>
                   ) : (
-                    <p className="italic text-piedra">Sin contrato activo actualmente</p>
+                    <div className="rounded-xl bg-arena/60 p-2.5 border border-crema space-y-1">
+                      <p className="italic text-piedra">Sin contrato activo actualmente</p>
+                      <Link
+                        href="/admin/contratos"
+                        className="inline-block text-[11px] font-bold text-azul hover:underline"
+                      >
+                        + Configurar contrato
+                      </Link>
+                    </div>
                   )}
                 </div>
 

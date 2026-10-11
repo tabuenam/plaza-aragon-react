@@ -46,6 +46,11 @@ export type LeaseWithRelations = Lease & {
   tenant: Tenant;
 };
 
+export type AdminLease = Lease & {
+  space: Pick<Space, "id" | "name" | "status" | "price">;
+  tenant: Tenant;
+};
+
 export type FormState = {
   ok: boolean;
   message: string;
