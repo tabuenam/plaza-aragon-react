@@ -17,6 +17,13 @@ export type Tenant = {
   contact_info: string;
 };
 
+export type ContractAttachment = {
+  path: string;
+  url: string;
+  name: string;
+  isPdf: boolean;
+};
+
 export type Lease = {
   id: string;
   space_id: string;
@@ -25,6 +32,8 @@ export type Lease = {
   end_date: string;
   monthly_rent: number;
   active: boolean;
+  contract_files?: string[];
+  attachments?: ContractAttachment[];
 };
 
 export type Payment = {

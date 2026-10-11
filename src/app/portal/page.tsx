@@ -5,6 +5,7 @@ import { getTenantLeaseWithSpace, getTenantPayments } from "@/lib/data";
 import { formatDate, formatMoney, formatPeriod } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { PaymentForm } from "@/app/portal/payment-form";
+import { ContractAttachmentsView } from "@/components/contract-attachments-view";
 
 export const metadata: Metadata = {
   title: "Mi Portal",
@@ -86,6 +87,13 @@ export default async function TenantPortalPage() {
             <p className="mt-1 text-sm font-semibold text-tinta">{formatDate(lease.end_date)}</p>
           </div>
         </div>
+
+        {lease.attachments && lease.attachments.length > 0 && (
+          <div className="mt-6 border-t border-crema pt-4">
+            <p className="mb-2 text-xs font-semibold uppercase text-piedra">Documentos de su contrato</p>
+            <ContractAttachmentsView attachments={lease.attachments} />
+          </div>
+        )}
       </section>
 
       <section className="card">

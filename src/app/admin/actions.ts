@@ -186,16 +186,66 @@ export async function createLeaseAction(_prevState: FormState, formData: FormDat
     };
   }
 
+  const leaseId = crypto.randomUUID();
+  const contractFiles = formData.getAll("contract_files") as File[];
+  const uploadedPaths: string[] = [];
+  const adminClient = createSupabaseAdminClient();
+
+  for (const file of contractFiles) {
+    if (file && file.size > 0 && typeof file.arrayBuffer === "function") {
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const safeExt = ["jpg", "jpeg", "png", "webp", "pdf", "heic", "heif"].includes(fileExt)
+        ? fileExt
+        : "jpg";
+      const cleanBaseName =
+        file.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[^a-zA-Z0-9_-]/g, "_")
+          .slice(0, 40) || "doc";
+      const filePath = `${leaseId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${cleanBaseName}.${safeExt}`;
+      const arrayBuffer = await file.arrayBuffer();
+      const fileBuffer = Buffer.from(arrayBuffer);
+
+      const contentType = file.type || (safeExt === "pdf" ? "application/pdf" : "image/jpeg");
+
+      const { error: uploadError } = await supabase.storage
+        .from("contracts")
+        .upload(filePath, fileBuffer, {
+          contentType,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        const { error: adminUploadError } = await adminClient.storage
+          .from("contracts")
+          .upload(filePath, fileBuffer, {
+            contentType,
+            upsert: false,
+          });
+        if (!adminUploadError) {
+          uploadedPaths.push(filePath);
+        }
+      } else {
+        uploadedPaths.push(filePath);
+      }
+    }
+  }
+
   const { error: leaseError } = await supabase.from("leases").insert({
+    id: leaseId,
     space_id: spaceId,
     tenant_id: tenantId,
     start_date: startDate,
     end_date: endDate,
     monthly_rent: monthlyRent,
     active: true,
+    contract_files: uploadedPaths,
   });
 
   if (leaseError) {
+    if (uploadedPaths.length > 0) {
+      await adminClient.storage.from("contracts").remove(uploadedPaths);
+    }
     return { ok: false, message: "Error al registrar el contrato de arrendamiento." };
   }
 
@@ -257,6 +307,57 @@ export async function updateLeaseAction(_prevState: FormState, formData: FormDat
     }
   }
 
+  const existingFilesRaw = String(formData.get("existing_contract_files") ?? "[]");
+  let finalContractFiles: string[] = [];
+  try {
+    finalContractFiles = JSON.parse(existingFilesRaw);
+  } catch {
+    finalContractFiles = [];
+  }
+
+  const newContractFiles = formData.getAll("new_contract_files") as File[];
+  const adminClient = createSupabaseAdminClient();
+
+  for (const file of newContractFiles) {
+    if (file && file.size > 0 && typeof file.arrayBuffer === "function") {
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const safeExt = ["jpg", "jpeg", "png", "webp", "pdf", "heic", "heif"].includes(fileExt)
+        ? fileExt
+        : "jpg";
+      const cleanBaseName =
+        file.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[^a-zA-Z0-9_-]/g, "_")
+          .slice(0, 40) || "doc";
+      const filePath = `${leaseId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${cleanBaseName}.${safeExt}`;
+      const arrayBuffer = await file.arrayBuffer();
+      const fileBuffer = Buffer.from(arrayBuffer);
+
+      const contentType = file.type || (safeExt === "pdf" ? "application/pdf" : "image/jpeg");
+
+      const { error: uploadError } = await supabase.storage
+        .from("contracts")
+        .upload(filePath, fileBuffer, {
+          contentType,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        const { error: adminUploadError } = await adminClient.storage
+          .from("contracts")
+          .upload(filePath, fileBuffer, {
+            contentType,
+            upsert: false,
+          });
+        if (!adminUploadError) {
+          finalContractFiles.push(filePath);
+        }
+      } else {
+        finalContractFiles.push(filePath);
+      }
+    }
+  }
+
   const { error: updateError } = await supabase
     .from("leases")
     .update({
@@ -266,6 +367,7 @@ export async function updateLeaseAction(_prevState: FormState, formData: FormDat
       end_date: endDate,
       monthly_rent: monthlyRent,
       active,
+      contract_files: finalContractFiles,
     })
     .eq("id", leaseId);
 

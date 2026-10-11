@@ -28,7 +28,32 @@ export async function getTenantLeaseWithSpace(tenantId: string): Promise<LeaseWi
     .maybeSingle();
 
   if (error || !data) return null;
-  return data as unknown as LeaseWithRelations;
+  const lease = data as unknown as LeaseWithRelations;
+
+  const files = Array.isArray(lease.contract_files) ? lease.contract_files : [];
+  const paths = files.filter((p) => p && !p.startsWith("http://") && !p.startsWith("https://"));
+
+  const urlMap = new Map<string, string>();
+  if (paths.length > 0) {
+    const { data: signedUrls } = await supabase.storage.from("contracts").createSignedUrls(paths, 3600);
+    if (signedUrls) {
+      for (const item of signedUrls) {
+        if (item.path && item.signedUrl) {
+          urlMap.set(item.path, item.signedUrl);
+        }
+      }
+    }
+  }
+
+  lease.attachments = files.map((path) => {
+    const url = urlMap.get(path) || path;
+    const rawName = path.split("/").pop() || "contrato";
+    const name = rawName.replace(/^\d+-/, "");
+    const isPdf = path.toLowerCase().endsWith(".pdf");
+    return { path, url, name, isPdf };
+  });
+
+  return lease;
 }
 
 export async function getTenantPayments(leaseId: string): Promise<Payment[]> {
@@ -129,6 +154,13 @@ export async function getReceiptSignedUrl(path: string): Promise<string | null> 
   return data?.signedUrl ?? null;
 }
 
+export async function getContractSignedUrl(path: string): Promise<string | null> {
+  if (!path) return null;
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.storage.from("contracts").createSignedUrl(path, 3600);
+  return data?.signedUrl ?? null;
+}
+
 export async function getAllLeases(): Promise<AdminLease[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -138,7 +170,43 @@ export async function getAllLeases(): Promise<AdminLease[]> {
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];
-  return data as unknown as AdminLease[];
+  const leases = data as unknown as AdminLease[];
+
+  const allPaths: string[] = [];
+  for (const lease of leases) {
+    if (Array.isArray(lease.contract_files)) {
+      for (const p of lease.contract_files) {
+        if (p && !p.startsWith("http://") && !p.startsWith("https://")) {
+          allPaths.push(p);
+        }
+      }
+    }
+  }
+
+  const urlMap = new Map<string, string>();
+  if (allPaths.length > 0) {
+    const { data: signedUrls } = await supabase.storage.from("contracts").createSignedUrls(allPaths, 3600);
+    if (signedUrls) {
+      for (const item of signedUrls) {
+        if (item.path && item.signedUrl) {
+          urlMap.set(item.path, item.signedUrl);
+        }
+      }
+    }
+  }
+
+  for (const lease of leases) {
+    const files = Array.isArray(lease.contract_files) ? lease.contract_files : [];
+    lease.attachments = files.map((path) => {
+      const url = urlMap.get(path) || path;
+      const rawName = path.split("/").pop() || "contrato";
+      const name = rawName.replace(/^\d+-/, "");
+      const isPdf = path.toLowerCase().endsWith(".pdf");
+      return { path, url, name, isPdf };
+    });
+  }
+
+  return leases;
 }
 
 export async function getAllTenants(): Promise<Tenant[]> {

@@ -9,6 +9,7 @@ import { CreateLeaseModal } from "@/components/create-lease-modal";
 import { EditLeaseModal } from "@/components/edit-lease-modal";
 import { TerminateLeaseButton } from "@/components/terminate-lease-button";
 import { CreateTenantModal } from "@/components/create-tenant-modal";
+import { ContractAttachmentsView } from "@/components/contract-attachments-view";
 
 export const metadata: Metadata = {
   title: "Contratos de Arrendamiento",
@@ -227,6 +228,20 @@ export default async function AdminContratosPage(props: { searchParams: SearchPa
                         </span>
                       </div>
                     )}
+                  </div>
+
+                  <div className="mt-4 border-t border-crema/60 pt-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase text-piedra">
+                        Documentos / Fotos del contrato
+                      </span>
+                      {lease.attachments && lease.attachments.length > 0 && (
+                        <span className="text-[11px] font-semibold text-selva">
+                          ✓ {lease.attachments.length} archivo(s)
+                        </span>
+                      )}
+                    </div>
+                    <ContractAttachmentsView attachments={lease.attachments} />
                   </div>
                 </div>
 

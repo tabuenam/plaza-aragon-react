@@ -24,6 +24,7 @@ create table public.leases (
   end_date date not null,
   monthly_rent numeric(10, 2) not null check (monthly_rent > 0),
   active boolean not null default true,
+  contract_files text[] not null default '{}',
   created_at timestamptz not null default now(),
   check (end_date > start_date)
 );
@@ -111,7 +112,8 @@ create policy "payments_admin_write" on public.payments
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
   ('receipts', 'receipts', false, 5242880, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']),
-  ('spaces', 'spaces', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+  ('spaces', 'spaces', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
+  ('contracts', 'contracts', false, 20971520, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'])
 on conflict (id) do nothing;
 
 create policy "receipts_tenant_insert" on storage.objects
@@ -128,3 +130,17 @@ create policy "receipts_select_own_or_admin" on storage.objects
 create policy "spaces_admin_all" on storage.objects
   for all to authenticated using (bucket_id = 'spaces' and public.is_admin())
   with check (bucket_id = 'spaces' and public.is_admin());
+
+create policy "contracts_admin_all" on storage.objects
+  for all to authenticated using (bucket_id = 'contracts' and public.is_admin())
+  with check (bucket_id = 'contracts' and public.is_admin());
+
+create policy "contracts_tenant_select" on storage.objects
+  for select to authenticated using (
+    bucket_id = 'contracts'
+    and exists (
+      select 1 from public.leases l
+      where l.tenant_id = (select auth.uid())
+        and (storage.foldername(name))[1] = l.id::text
+    )
+  );

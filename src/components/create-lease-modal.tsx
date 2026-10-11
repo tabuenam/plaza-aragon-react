@@ -1,13 +1,24 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import Image from "next/image";
 import { createLeaseAction } from "@/app/admin/actions";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
+import { compressImage } from "@/lib/compress-image";
 import { formatMoney, todayInHonduras } from "@/lib/format";
 import type { FormState, Space, Tenant } from "@/lib/types";
 
 const initialState: FormState = { ok: true, message: "" };
+
+type StagedFile = {
+  id: string;
+  file: File;
+  previewUrl?: string;
+  isPdf: boolean;
+  name: string;
+  formattedSize: string;
+};
 
 function defaultEndDate(startDateStr: string) {
   if (!startDateStr) return "";
@@ -31,6 +42,13 @@ export function CreateLeaseModal({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [state, formAction] = useActionState(createLeaseAction, initialState);
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const availableSpaces = spaces.filter((s) => !activeSpaceIds.includes(s.id));
   const defaultSpace = initialSpaceId
@@ -45,11 +63,15 @@ export function CreateLeaseModal({
   useEffect(() => {
     if (state.ok && state.message) {
       const timer = setTimeout(() => {
+        stagedFiles.forEach((f) => {
+          if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+        });
+        setStagedFiles([]);
         setIsOpen(false);
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [state]);
+  }, [state, stagedFiles]);
 
   function handleOpen() {
     const candidate = initialSpaceId
@@ -63,10 +85,15 @@ export function CreateLeaseModal({
     const today = todayInHonduras();
     setStartDate(today);
     setEndDate(defaultEndDate(today));
+    setStagedFiles([]);
     setIsOpen(true);
   }
 
   function handleClose() {
+    stagedFiles.forEach((f) => {
+      if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+    });
+    setStagedFiles([]);
     setIsOpen(false);
   }
 
@@ -81,6 +108,64 @@ export function CreateLeaseModal({
   function handleStartDateChange(newStartDate: string) {
     setStartDate(newStartDate);
     setEndDate(defaultEndDate(newStartDate));
+  }
+
+  async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    setIsProcessing(true);
+    try {
+      const newItems: StagedFile[] = [];
+      for (const rawFile of Array.from(fileList)) {
+        const isPdf =
+          rawFile.type === "application/pdf" || rawFile.name.toLowerCase().endsWith(".pdf");
+        const file = isPdf ? rawFile : await compressImage(rawFile);
+        const previewUrl = isPdf ? undefined : URL.createObjectURL(file);
+        const sizeStr =
+          file.size > 1024 * 1024
+            ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+            : `${Math.round(file.size / 1024)} KB`;
+
+        newItems.push({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          file,
+          previewUrl,
+          isPdf,
+          name: rawFile.name,
+          formattedSize: sizeStr,
+        });
+      }
+      setStagedFiles((prev) => [...prev, ...newItems]);
+    } finally {
+      setIsProcessing(false);
+      if (e.target) e.target.value = "";
+    }
+  }
+
+  function handleRemoveFile(idToRemove: string) {
+    setStagedFiles((prev) => {
+      const target = prev.find((item) => item.id === idToRemove);
+      if (target?.previewUrl) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter((item) => item.id !== idToRemove);
+    });
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    formData.delete("contract_files");
+    stagedFiles.forEach(({ file }) => {
+      formData.append("contract_files", file);
+    });
+
+    startTransition(async () => {
+      await formAction(formData);
+    });
   }
 
   return (
@@ -115,7 +200,7 @@ export function CreateLeaseModal({
                   Registrar Contrato de Arrendamiento
                 </h3>
                 <p className="text-xs text-piedra">
-                  Asigne un local comercial a un inquilino con vigencia y monto mensual.
+                  Asigne un local comercial a un inquilino con vigencia, monto mensual y documentos.
                 </p>
               </div>
               <button
@@ -130,7 +215,11 @@ export function CreateLeaseModal({
               </button>
             </header>
 
-            <form action={formAction} className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 space-y-4">
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 space-y-4"
+            >
               <div>
                 <label htmlFor="create-space-id" className="label">
                   Local comercial
@@ -147,7 +236,10 @@ export function CreateLeaseModal({
                     const hasActive = activeSpaceIds.includes(s.id);
                     return (
                       <option key={s.id} value={s.id} disabled={hasActive}>
-                        {s.name} · {formatMoney(s.price)} {hasActive ? "(Ya tiene contrato activo)" : `(${s.status === "available" ? "Disponible" : s.status})`}
+                        {s.name} · {formatMoney(s.price)}{" "}
+                        {hasActive
+                          ? "(Ya tiene contrato activo)"
+                          : `(${s.status === "available" ? "Disponible" : s.status})`}
                       </option>
                     );
                   })}
@@ -233,6 +325,158 @@ export function CreateLeaseModal({
                 </p>
               </div>
 
+              <div className="space-y-3 rounded-2xl border border-crema bg-arena/40 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="label mb-0">Documento o fotografías del contrato</span>
+                    <p className="text-[11px] text-piedra">
+                      Suba el contrato firmado en PDF o tome fotografías de sus páginas. (Opcional)
+                    </p>
+                  </div>
+                  {stagedFiles.length > 0 && (
+                    <span className="rounded-full bg-turquesa-claro px-2.5 py-0.5 text-xs font-bold text-azul">
+                      {stagedFiles.length} adjunto(s)
+                    </span>
+                  )}
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                  multiple
+                  onChange={handleFilesSelected}
+                  className="sr-only"
+                  id="create-lease-file-input"
+                />
+
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFilesSelected}
+                  className="sr-only"
+                  id="create-lease-camera-input"
+                />
+
+                {stagedFiles.length > 0 && (
+                  <div className="space-y-2.5">
+                    {stagedFiles.filter((f) => f.isPdf).length > 0 && (
+                      <div className="space-y-1.5">
+                        {stagedFiles
+                          .filter((f) => f.isPdf)
+                          .map((f) => (
+                            <div
+                              key={f.id}
+                              className="flex items-center justify-between rounded-xl border border-crema bg-white p-2.5 shadow-2xs"
+                            >
+                              <div className="flex items-center gap-2.5 overflow-hidden">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-barro-claro text-barro font-bold text-xs">
+                                  PDF
+                                </span>
+                                <div className="overflow-hidden">
+                                  <p className="truncate text-xs font-semibold text-tinta">{f.name}</p>
+                                  <p className="text-[10px] text-piedra">{f.formattedSize}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFile(f.id)}
+                                className="flex h-7 w-7 items-center justify-center rounded-lg text-piedra transition hover:bg-barro-claro hover:text-barro"
+                                title="Eliminar archivo"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {stagedFiles.filter((f) => !f.isPdf).length > 0 && (
+                      <div>
+                        <p className="mb-1 text-[11px] font-semibold text-piedra uppercase">
+                          Fotografías capturadas ({stagedFiles.filter((f) => !f.isPdf).length})
+                        </p>
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                          {stagedFiles
+                            .filter((f) => !f.isPdf)
+                            .map((photo, idx) => (
+                              <div
+                                key={photo.id}
+                                className="group relative aspect-4/3 overflow-hidden rounded-xl border border-crema bg-white shadow-2xs"
+                              >
+                                {photo.previewUrl && (
+                                  <Image
+                                    src={photo.previewUrl}
+                                    alt={photo.name}
+                                    fill
+                                    className="object-cover"
+                                    sizes="120px"
+                                  />
+                                )}
+                                <span className="absolute bottom-1 left-1 rounded bg-tinta/70 px-1 py-0.5 text-[9px] font-bold text-white">
+                                  Pág {idx + 1}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveFile(photo.id)}
+                                  className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-barro text-white shadow-xs transition hover:bg-barro/80"
+                                  title="Eliminar foto"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={isProcessing}
+                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-crema bg-white px-3 py-2 text-xs font-semibold text-azul shadow-2xs transition hover:bg-arena hover:border-turquesa active:scale-95 disabled:opacity-50"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    {isProcessing ? "Procesando…" : "Tomar foto con cámara"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
+                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-crema bg-white px-3 py-2 text-xs font-semibold text-azul shadow-2xs transition hover:bg-arena hover:border-turquesa active:scale-95 disabled:opacity-50"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                      />
+                    </svg>
+                    {isProcessing ? "Procesando…" : "Elegir archivo PDF o fotos"}
+                  </button>
+                </div>
+              </div>
+
               <FormMessage state={state} />
 
               <footer className="flex flex-col-reverse gap-2 border-t border-crema pt-4 sm:flex-row sm:justify-end">
@@ -244,7 +488,7 @@ export function CreateLeaseModal({
                   Cancelar
                 </button>
                 <SubmitButton
-                  pendingText="Creando contrato…"
+                  pendingText={isPending ? "Subiendo contrato…" : "Creando contrato…"}
                   className="btn-primary min-h-11 text-sm py-2 px-5"
                 >
                   Crear contrato
