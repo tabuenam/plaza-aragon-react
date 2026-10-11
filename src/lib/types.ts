@@ -58,6 +58,11 @@ export type LeaseWithRelations = Lease & {
 export type AdminLease = Lease & {
   space: Pick<Space, "id" | "name" | "status" | "price">;
   tenant: Tenant;
+  payment_count?: number;
+};
+
+export type AdminTenant = Tenant & {
+  email: string | null;
 };
 
 export type FormState = {

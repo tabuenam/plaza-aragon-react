@@ -1,6 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabasePublicClient } from "@/lib/supabase/static";
-import type { AdminLease, LeaseWithRelations, Payment, Space, Tenant } from "@/lib/types";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth";
+import type { AdminLease, AdminTenant, LeaseWithRelations, Payment, Space, Tenant } from "@/lib/types";
 
 export async function getPublicSpaces(): Promise<Space[]> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return [];
@@ -165,12 +167,19 @@ export async function getAllLeases(): Promise<AdminLease[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("leases")
-    .select("*, space:spaces(id, name, status, price), tenant:tenants(id, name, contact_info)")
+    .select(
+      "*, space:spaces(id, name, status, price), tenant:tenants(id, name, contact_info), payments(count)"
+    )
     .order("active", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];
-  const leases = data as unknown as AdminLease[];
+  const leases = (data as unknown as (AdminLease & { payments?: { count: number }[] })[]).map(
+    ({ payments, ...lease }) => ({
+      ...lease,
+      payment_count: payments?.[0]?.count ?? 0,
+    })
+  ) as AdminLease[];
 
   const allPaths: string[] = [];
   for (const lease of leases) {
@@ -218,6 +227,30 @@ export async function getAllTenants(): Promise<Tenant[]> {
 
   if (error || !data) return [];
   return data as Tenant[];
+}
+
+/**
+ * Tenants plus their login email. Emails live in `auth.users`, which RLS cannot
+ * expose, so they are read with the service-role client. Admin pages only.
+ */
+export async function getAdminTenants(): Promise<AdminTenant[]> {
+  await requireAdmin();
+  const tenants = await getAllTenants();
+  if (tenants.length === 0) return [];
+
+  const emailById = new Map<string, string>();
+  const adminClient = createSupabaseAdminClient();
+  const perPage = 1000;
+  for (let page = 1; ; page++) {
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage });
+    if (error || !data) break;
+    for (const u of data.users) {
+      if (u.email) emailById.set(u.id, u.email);
+    }
+    if (data.users.length < perPage) break;
+  }
+
+  return tenants.map((t) => ({ ...t, email: emailById.get(t.id) ?? null }));
 }
 
 export async function getAllSpaces(): Promise<Space[]> {

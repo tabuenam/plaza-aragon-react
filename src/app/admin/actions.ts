@@ -468,3 +468,165 @@ export async function createTenantAction(_prevState: FormState, formData: FormDa
   return { ok: true, message: "Inquilino registrado exitosamente." };
 }
 
+function revalidateLeaseViews() {
+  revalidatePath("/admin");
+  revalidatePath("/admin/contratos");
+  revalidatePath("/admin/pagos");
+  revalidatePath("/admin/historial");
+  revalidatePath("/");
+  revalidatePath("/portal");
+}
+
+export async function updateTenantAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const tenantId = String(formData.get("tenant_id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const contactInfo = String(formData.get("contact_info") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "").trim();
+
+  if (!tenantId || !name || !email) {
+    return { ok: false, message: "El nombre y el correo electrónico del inquilino son obligatorios." };
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const { data: authData, error: getUserError } = await adminClient.auth.admin.getUserById(tenantId);
+  const authUser = authData?.user;
+
+  if (getUserError || !authUser) {
+    return { ok: false, message: "No se encontró la cuenta de acceso del inquilino." };
+  }
+
+  if (authUser.app_metadata?.role === "admin") {
+    return { ok: false, message: "No se puede modificar una cuenta de administrador desde aquí." };
+  }
+
+  const emailChanged = (authUser.email ?? "").toLowerCase() !== email;
+  if (emailChanged || password || authUser.user_metadata?.name !== name) {
+    const { error: authError } = await adminClient.auth.admin.updateUserById(tenantId, {
+      ...(emailChanged ? { email, email_confirm: true } : {}),
+      ...(password ? { password } : {}),
+      user_metadata: { ...authUser.user_metadata, name },
+    });
+
+    if (authError) {
+      return { ok: false, message: authError.message || "No se pudo actualizar la cuenta del inquilino." };
+    }
+  }
+
+  const { error: tenantError } = await user.supabase
+    .from("tenants")
+    .update({ name, contact_info: contactInfo })
+    .eq("id", tenantId);
+
+  if (tenantError) {
+    return { ok: false, message: "Error al actualizar los datos del inquilino." };
+  }
+
+  revalidateLeaseViews();
+  return { ok: true, message: "Inquilino actualizado exitosamente." };
+}
+
+export async function deleteTenantAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const tenantId = String(formData.get("tenant_id") ?? "");
+
+  if (!tenantId) {
+    return { ok: false, message: "Identificador de inquilino no proporcionado." };
+  }
+
+  const supabase = user.supabase;
+  const { count, error: countError } = await supabase
+    .from("leases")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId);
+
+  if (countError) {
+    return { ok: false, message: "No se pudo verificar los contratos del inquilino." };
+  }
+
+  if ((count ?? 0) > 0) {
+    return {
+      ok: false,
+      message: `Este inquilino tiene ${count} contrato(s) registrado(s). Elimine sus contratos antes de eliminar al inquilino.`,
+    };
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const { data: authData } = await adminClient.auth.admin.getUserById(tenantId);
+  const authUser = authData?.user;
+
+  if (authUser?.app_metadata?.role === "admin") {
+    return { ok: false, message: "No se puede eliminar una cuenta de administrador." };
+  }
+
+  if (authUser) {
+    // Deleting the auth user cascades to public.tenants (FK on delete cascade).
+    const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(tenantId);
+    if (deleteUserError) {
+      return { ok: false, message: "No se pudo eliminar la cuenta de acceso del inquilino." };
+    }
+  }
+
+  // Covers orphan tenant rows without an auth user; no-op if the cascade already removed it.
+  const { error: tenantError } = await supabase.from("tenants").delete().eq("id", tenantId);
+  if (tenantError) {
+    return { ok: false, message: "Error al eliminar los datos del inquilino." };
+  }
+
+  revalidateLeaseViews();
+  return { ok: true, message: "Inquilino eliminado exitosamente." };
+}
+
+export async function deleteLeaseAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const leaseId = String(formData.get("lease_id") ?? "");
+
+  if (!leaseId) {
+    return { ok: false, message: "Identificador de contrato no proporcionado." };
+  }
+
+  const supabase = user.supabase;
+  const { data: lease } = await supabase
+    .from("leases")
+    .select("space_id, active, contract_files")
+    .eq("id", leaseId)
+    .single();
+
+  if (!lease) {
+    return { ok: false, message: "El contrato no fue encontrado." };
+  }
+
+  const { data: payments } = await supabase
+    .from("payments")
+    .select("receipt_path")
+    .eq("lease_id", leaseId);
+
+  // Payments are removed by the FK `on delete cascade`.
+  const { error } = await supabase.from("leases").delete().eq("id", leaseId);
+
+  if (error) {
+    return { ok: false, message: "Error al eliminar el contrato." };
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  const contractPaths = ((lease.contract_files as string[] | null) ?? []).filter(
+    (p) => p && !p.startsWith("http://") && !p.startsWith("https://")
+  );
+  if (contractPaths.length > 0) {
+    await adminClient.storage.from("contracts").remove(contractPaths);
+  }
+
+  const receiptPaths = (payments ?? []).map((p) => p.receipt_path as string).filter(Boolean);
+  if (receiptPaths.length > 0) {
+    await adminClient.storage.from("receipts").remove(receiptPaths);
+  }
+
+  if (lease.active) {
+    await supabase.from("spaces").update({ status: "available" }).eq("id", lease.space_id);
+  }
+
+  revalidateLeaseViews();
+  return { ok: true, message: "Contrato eliminado exitosamente." };
+}
+

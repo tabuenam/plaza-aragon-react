@@ -2,21 +2,39 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { getAllLeases, getAllSpaces, getAllTenants } from "@/lib/data";
+import { getAdminTenants, getAllLeases, getAllSpaces } from "@/lib/data";
 import { daysUntil, formatDate, formatMoney } from "@/lib/format";
-import { StatusBadge } from "@/components/status-badge";
+import { deleteLeaseAction, deleteTenantAction } from "@/app/admin/actions";
+import { CollapsibleSection } from "@/components/collapsible-section";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { CreateLeaseModal } from "@/components/create-lease-modal";
 import { EditLeaseModal } from "@/components/edit-lease-modal";
 import { TerminateLeaseButton } from "@/components/terminate-lease-button";
 import { CreateTenantModal } from "@/components/create-tenant-modal";
+import { EditTenantModal } from "@/components/edit-tenant-modal";
 import { ContractAttachmentsView } from "@/components/contract-attachments-view";
 
 export const metadata: Metadata = {
   title: "Contratos de Arrendamiento",
-  description: "Administración, modificación y terminación de contratos en Plaza Aragón.",
+  description: "Administración de inquilinos y contratos de arrendamiento en Plaza Aragón.",
 };
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
+
+/* Responsive table: regular table from md up, stacked cards below (labels shown via CellLabel). */
+const tableClass = "w-full text-left text-sm max-md:block";
+const theadClass = "max-md:hidden bg-arena/60 text-xs font-semibold uppercase tracking-wider text-piedra";
+const thClass = "px-4 py-3 font-semibold";
+const tbodyClass = "max-md:block max-md:space-y-3 max-md:p-3 md:divide-y md:divide-crema/70";
+const trClass = "align-top max-md:block max-md:rounded-2xl max-md:border max-md:border-crema max-md:p-4";
+const cellClass =
+  "max-md:flex max-md:items-start max-md:justify-between max-md:gap-3 max-md:py-1.5 md:px-4 md:py-3";
+const rowHeaderClass = `${cellClass} max-md:mb-1 max-md:border-b max-md:border-crema/70 max-md:pb-2 font-normal`;
+const actionsCellClass = `${cellClass} max-md:mt-2 max-md:border-t max-md:border-crema/70 max-md:pt-3`;
+
+function CellLabel({ children }: { children: string }) {
+  return <span className="shrink-0 text-xs font-semibold uppercase text-piedra md:hidden">{children}</span>;
+}
 
 export default async function AdminContratosPage(props: { searchParams: SearchParams }) {
   await connection();
@@ -25,9 +43,7 @@ export default async function AdminContratosPage(props: { searchParams: SearchPa
   const searchParams = await props.searchParams;
   const filterEstado = typeof searchParams.estado === "string" ? searchParams.estado : "todos";
 
-  const leases = await getAllLeases();
-  const spaces = await getAllSpaces();
-  const tenants = await getAllTenants();
+  const [leases, spaces, tenants] = await Promise.all([getAllLeases(), getAllSpaces(), getAdminTenants()]);
 
   const activeLeases = leases.filter((l) => l.active);
   const terminatedLeases = leases.filter((l) => !l.active);
@@ -42,26 +58,26 @@ export default async function AdminContratosPage(props: { searchParams: SearchPa
     return true;
   });
 
+  const leasesByTenant = new Map<string, typeof leases>();
+  for (const lease of leases) {
+    const list = leasesByTenant.get(lease.tenant_id) ?? [];
+    list.push(lease);
+    leasesByTenant.set(lease.tenant_id, list);
+  }
+
+  const filters = [
+    { key: "todos", label: "Todos", count: leases.length },
+    { key: "activos", label: "Vigentes", count: activeLeases.length },
+    { key: "terminados", label: "Terminados", count: terminatedLeases.length },
+  ];
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-azul sm:text-3xl">
-            Contratos de Arrendamiento
-          </h1>
-          <p className="mt-1 text-sm text-piedra">
-            Configure los detalles de los alquileres, modifique vigencias o termine contratos existentes.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <CreateTenantModal />
-          <CreateLeaseModal
-            spaces={spaces}
-            tenants={tenants}
-            activeSpaceIds={activeSpaceIds}
-          />
-        </div>
+      <div>
+        <h1 className="font-display text-2xl font-bold text-azul sm:text-3xl">Contratos de Arrendamiento</h1>
+        <p className="mt-1 text-sm text-piedra">
+          Administre inquilinos y contratos: cree, modifique, termine o elimine registros.
+        </p>
       </div>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -73,7 +89,7 @@ export default async function AdminContratosPage(props: { searchParams: SearchPa
 
         <div className="card bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-piedra">Renta Comprometida</p>
-          <p className="mt-2 font-display text-xl font-bold text-selsm sm:text-2xl text-selva">
+          <p className="mt-2 font-display text-xl font-bold text-selva sm:text-2xl">
             {formatMoney(committedIncome)}
           </p>
           <p className="mt-1 text-xs text-piedra">Ingreso mensual proyectado</p>
@@ -89,182 +105,295 @@ export default async function AdminContratosPage(props: { searchParams: SearchPa
 
         <div className="card bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-piedra">Inquilinos Registrados</p>
-          <p className="mt-2 font-display text-2xl font-bold text-azul sm:text-3xl">
-            {tenants.length}
-          </p>
+          <p className="mt-2 font-display text-2xl font-bold text-azul sm:text-3xl">{tenants.length}</p>
           <p className="mt-1 text-xs text-piedra">{terminatedLeases.length} contratos históricos</p>
         </div>
       </section>
 
-      <div className="flex items-center gap-2 border-b border-crema pb-2">
-        <Link
-          href="/admin/contratos?estado=todos"
-          className={`rounded-xl px-4 py-2 text-xs font-semibold transition ${
-            filterEstado === "todos"
-              ? "bg-azul text-white"
-              : "bg-white text-piedra border border-crema hover:bg-crema/40"
-          }`}
-        >
-          Todos ({leases.length})
-        </Link>
-        <Link
-          href="/admin/contratos?estado=activos"
-          className={`rounded-xl px-4 py-2 text-xs font-semibold transition ${
-            filterEstado === "activos"
-              ? "bg-azul text-white"
-              : "bg-white text-piedra border border-crema hover:bg-crema/40"
-          }`}
-        >
-          Vigentes ({activeLeases.length})
-        </Link>
-        <Link
-          href="/admin/contratos?estado=terminados"
-          className={`rounded-xl px-4 py-2 text-xs font-semibold transition ${
-            filterEstado === "terminados"
-              ? "bg-azul text-white"
-              : "bg-white text-piedra border border-crema hover:bg-crema/40"
-          }`}
-        >
-          Terminados ({terminatedLeases.length})
-        </Link>
-      </div>
+      {/* ───────────── Inquilinos ───────────── */}
+      <CollapsibleSection
+        title="Inquilinos"
+        count={tenants.length}
+        description="Cuentas de acceso al portal y datos de contacto de los arrendatarios."
+      >
+        <div className="flex items-center justify-end gap-2 px-4 py-3 sm:px-6">
+          <CreateTenantModal />
+        </div>
 
-      {displayLeases.length === 0 ? (
-        <div className="card text-center py-12">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-arena text-piedra font-bold text-xl">
-            📄
+        {tenants.length === 0 ? (
+          <p className="border-t border-crema px-6 py-10 text-center text-sm text-piedra">
+            No hay inquilinos registrados. Registre uno para poder crear contratos.
+          </p>
+        ) : (
+          <div className="overflow-x-auto border-t border-crema">
+            <table className={tableClass}>
+              <caption className="sr-only">Inquilinos registrados</caption>
+              <thead className={theadClass}>
+                <tr>
+                  <th scope="col" className={thClass}>Inquilino</th>
+                  <th scope="col" className={thClass}>Correo</th>
+                  <th scope="col" className={thClass}>Contacto</th>
+                  <th scope="col" className={thClass}>Contratos</th>
+                  <th scope="col" className={`${thClass} text-right`}>
+                    <span className="sr-only">Acciones</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className={tbodyClass}>
+                {tenants.map((tenant) => {
+                  const tenantLeases = leasesByTenant.get(tenant.id) ?? [];
+                  const tenantActive = tenantLeases.filter((l) => l.active);
+                  const tenantHistoric = tenantLeases.length - tenantActive.length;
+                  return (
+                    <tr key={tenant.id} className={trClass}>
+                      <th scope="row" className={rowHeaderClass}>
+                        <span className="font-semibold text-azul">{tenant.name}</span>
+                      </th>
+                      <td className={cellClass}>
+                        <CellLabel>Correo</CellLabel>
+                        <span className="break-all text-tinta max-md:text-right">
+                          {tenant.email ?? <span className="italic text-piedra">Sin cuenta</span>}
+                        </span>
+                      </td>
+                      <td className={cellClass}>
+                        <CellLabel>Contacto</CellLabel>
+                        <span className="text-tinta">
+                          {tenant.contact_info || <span className="italic text-piedra">—</span>}
+                        </span>
+                      </td>
+                      <td className={cellClass}>
+                        <CellLabel>Contratos</CellLabel>
+                        <div className="flex flex-wrap items-center gap-1.5 max-md:justify-end">
+                          {tenantActive.map((l) => (
+                            <span
+                              key={l.id}
+                              className="rounded-full bg-selva-claro px-2.5 py-0.5 text-xs font-semibold text-selva"
+                            >
+                              {l.space.name}
+                            </span>
+                          ))}
+                          {tenantHistoric > 0 && (
+                            <span className="rounded-full bg-crema px-2.5 py-0.5 text-xs font-semibold text-piedra">
+                              {tenantHistoric} terminado(s)
+                            </span>
+                          )}
+                          {tenantLeases.length === 0 && <span className="text-xs italic text-piedra">Ninguno</span>}
+                        </div>
+                      </td>
+                      <td className={actionsCellClass}>
+                        <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                          <EditTenantModal tenant={tenant} />
+                          <ConfirmDeleteButton
+                            action={deleteTenantAction}
+                            fields={{ tenant_id: tenant.id }}
+                            ariaLabel={`Eliminar inquilino ${tenant.name}`}
+                            title={`¿Eliminar a ${tenant.name}?`}
+                            description={
+                              <>
+                                Se eliminará su ficha y su cuenta de acceso al portal. Esta acción no se puede
+                                deshacer.
+                              </>
+                            }
+                            blockedReason={
+                              tenantLeases.length > 0
+                                ? `Tiene ${tenantLeases.length} contrato(s) registrado(s). Elimine primero sus contratos en la tabla de contratos.`
+                                : undefined
+                            }
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <h2 className="mt-3 font-display text-lg font-bold text-azul">No se encontraron contratos</h2>
-          <p className="mt-1 text-sm text-piedra max-w-sm mx-auto">
+        )}
+      </CollapsibleSection>
+
+      {/* ───────────── Contratos ───────────── */}
+      <CollapsibleSection
+        title="Contratos"
+        count={leases.length}
+        description="Vigencias, rentas pactadas y documentos de cada arrendamiento."
+      >
+        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <nav aria-label="Filtrar contratos" className="flex flex-wrap items-center gap-2">
+            {filters.map((f) => (
+              <Link
+                key={f.key}
+                href={`/admin/contratos?estado=${f.key}`}
+                scroll={false}
+                aria-current={filterEstado === f.key ? "page" : undefined}
+                className={`rounded-xl px-4 py-2 text-xs font-semibold transition ${
+                  filterEstado === f.key
+                    ? "bg-azul text-white"
+                    : "border border-crema bg-white text-piedra hover:bg-crema/40"
+                }`}
+              >
+                {f.label} ({f.count})
+              </Link>
+            ))}
+          </nav>
+          <CreateLeaseModal spaces={spaces} tenants={tenants} activeSpaceIds={activeSpaceIds} />
+        </div>
+
+        {displayLeases.length === 0 ? (
+          <p className="border-t border-crema px-6 py-10 text-center text-sm text-piedra">
             {filterEstado === "terminados"
               ? "No hay contratos finalizados registrados en el sistema."
               : "No hay contratos que coincidan con este filtro. Cree un nuevo contrato para empezar."}
           </p>
-        </div>
-      ) : (
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {displayLeases.map((lease) => {
-            const daysLeft = daysUntil(lease.end_date);
-            return (
-              <div
-                key={lease.id}
-                className={`flex flex-col justify-between rounded-3xl border p-5 transition hover:shadow-sm ${
-                  lease.active
-                    ? "border-crema bg-white"
-                    : "border-crema/70 bg-arena/30 opacity-80"
-                }`}
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="font-display text-xl font-bold text-tinta">{lease.space.name}</h2>
-                        <StatusBadge status={lease.space.status} />
-                      </div>
-                      <p className="mt-1 text-xs text-piedra">
-                        Precio base publicado: {formatMoney(lease.space.price)}
-                      </p>
-                    </div>
-
-                    <div>
-                      {lease.active ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-selva-claro px-3 py-1 text-xs font-bold text-selva">
-                          ● Vigente
+        ) : (
+          <div className="overflow-x-auto border-t border-crema">
+            <table className={tableClass}>
+              <caption className="sr-only">Contratos de arrendamiento</caption>
+              <thead className={theadClass}>
+                <tr>
+                  <th scope="col" className={thClass}>Local</th>
+                  <th scope="col" className={thClass}>Inquilino</th>
+                  <th scope="col" className={thClass}>Renta</th>
+                  <th scope="col" className={thClass}>Período</th>
+                  <th scope="col" className={thClass}>Estado</th>
+                  <th scope="col" className={thClass}>Documentos</th>
+                  <th scope="col" className={`${thClass} text-right`}>
+                    <span className="sr-only">Acciones</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className={tbodyClass}>
+                {displayLeases.map((lease) => {
+                  const daysLeft = daysUntil(lease.end_date);
+                  const attachmentCount = lease.attachments?.length ?? 0;
+                  const paymentCount = lease.payment_count ?? 0;
+                  return (
+                    <tr key={lease.id} className={`${trClass} ${lease.active ? "" : "bg-arena/40"}`}>
+                      <th scope="row" className={rowHeaderClass}>
+                        <span className="block font-semibold text-tinta">{lease.space.name}</span>
+                        <span className="block text-xs text-piedra">
+                          Base: {formatMoney(lease.space.price)}
                         </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-crema px-3 py-1 text-xs font-semibold text-piedra">
-                          Terminado
+                      </th>
+                      <td className={cellClass}>
+                        <CellLabel>Inquilino</CellLabel>
+                        <span className="max-md:text-right">
+                          <span className="block font-semibold text-azul">{lease.tenant.name}</span>
+                          <span className="block text-xs text-piedra">
+                            {lease.tenant.contact_info || "Sin número registrado"}
+                          </span>
                         </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-2xl border border-crema/80 bg-arena/40 p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase text-piedra">Arrendatario</span>
-                      <span className="font-semibold text-sm text-azul">{lease.tenant.name}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase text-piedra">Contacto</span>
-                      <span className="text-xs font-medium text-tinta">
-                        {lease.tenant.contact_info || "Sin número registrado"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-crema/60 pt-2">
-                      <span className="text-xs font-semibold uppercase text-piedra">Renta pactada</span>
-                      <span className="font-display text-lg font-bold text-azul">
-                        {formatMoney(lease.monthly_rent)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 space-y-1.5 text-xs text-piedra">
-                    <div className="flex items-center justify-between">
-                      <span>Período de contrato:</span>
-                      <span className="font-semibold text-tinta">
-                        {formatDate(lease.start_date)} – {formatDate(lease.end_date)}
-                      </span>
-                    </div>
-
-                    {lease.active && (
-                      <div className="flex items-center justify-between">
-                        <span>Estado de vigencia:</span>
-                        <span
-                          className={`font-semibold ${
-                            daysLeft < 0
-                              ? "text-barro"
-                              : daysLeft < 30
-                              ? "text-maiz"
-                              : "text-selva"
-                          }`}
-                        >
-                          {daysLeft < 0
-                            ? `Venció hace ${Math.abs(daysLeft)} días`
-                            : daysLeft === 0
-                            ? "Vence hoy"
-                            : `Quedan ${daysLeft} días`}
+                      </td>
+                      <td className={cellClass}>
+                        <CellLabel>Renta</CellLabel>
+                        <span className="whitespace-nowrap font-display font-bold text-azul">
+                          {formatMoney(lease.monthly_rent)}
                         </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4 border-t border-crema/60 pt-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase text-piedra">
-                        Documentos / Fotos del contrato
-                      </span>
-                      {lease.attachments && lease.attachments.length > 0 && (
-                        <span className="text-[11px] font-semibold text-selva">
-                          ✓ {lease.attachments.length} archivo(s)
+                      </td>
+                      <td className={cellClass}>
+                        <CellLabel>Período</CellLabel>
+                        <span className="max-md:text-right">
+                          <span className="block whitespace-nowrap text-tinta">
+                            {formatDate(lease.start_date)} – {formatDate(lease.end_date)}
+                          </span>
+                          {lease.active && (
+                            <span
+                              className={`block text-xs font-semibold ${
+                                daysLeft < 0 ? "text-barro" : daysLeft < 30 ? "text-maiz" : "text-selva"
+                              }`}
+                            >
+                              {daysLeft < 0
+                                ? `Venció hace ${Math.abs(daysLeft)} días`
+                                : daysLeft === 0
+                                  ? "Vence hoy"
+                                  : `Quedan ${daysLeft} días`}
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </div>
-                    <ContractAttachmentsView attachments={lease.attachments} />
-                  </div>
-                </div>
-
-                <div className="mt-5 flex items-center justify-end gap-2 border-t border-crema/60 pt-4">
-                  <EditLeaseModal
-                    lease={lease}
-                    spaces={spaces}
-                    tenants={tenants}
-                    activeSpaceIds={activeSpaceIds}
-                  />
-
-                  {lease.active && (
-                    <TerminateLeaseButton
-                      leaseId={lease.id}
-                      spaceName={lease.space.name}
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </section>
-      )}
+                      </td>
+                      <td className={cellClass}>
+                        <CellLabel>Estado</CellLabel>
+                        {lease.active ? (
+                          <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-selva-claro px-3 py-1 text-xs font-bold text-selva">
+                            <span aria-hidden="true">●</span> Vigente
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-crema px-3 py-1 text-xs font-semibold text-piedra">
+                            Terminado
+                          </span>
+                        )}
+                      </td>
+                      <td className={cellClass}>
+                        <CellLabel>Documentos</CellLabel>
+                        {attachmentCount === 0 ? (
+                          <span className="text-xs italic text-piedra">Sin archivos</span>
+                        ) : (
+                          <details className="group/docs max-md:text-right">
+                            <summary className="inline-flex cursor-pointer list-none items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1 text-xs font-semibold text-azul hover:bg-crema/40 [&::-webkit-details-marker]:hidden">
+                              {attachmentCount} archivo(s)
+                              <svg
+                                className="h-3.5 w-3.5 transition-transform group-open/docs:rotate-180"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </summary>
+                            <div className="mt-2 min-w-48 text-left">
+                              <ContractAttachmentsView attachments={lease.attachments} compact />
+                            </div>
+                          </details>
+                        )}
+                      </td>
+                      <td className={actionsCellClass}>
+                        <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                          <EditLeaseModal
+                            lease={lease}
+                            spaces={spaces}
+                            tenants={tenants}
+                            activeSpaceIds={activeSpaceIds}
+                          />
+                          {lease.active && (
+                            <TerminateLeaseButton leaseId={lease.id} spaceName={lease.space.name} />
+                          )}
+                          <ConfirmDeleteButton
+                            action={deleteLeaseAction}
+                            fields={{ lease_id: lease.id }}
+                            ariaLabel={`Eliminar contrato de ${lease.space.name}`}
+                            title={`¿Eliminar el contrato de ${lease.space.name}?`}
+                            description={
+                              <>
+                                <p>
+                                  Se borrará permanentemente el contrato de <strong>{lease.tenant.name}</strong>
+                                  {paymentCount > 0 && (
+                                    <>
+                                      , junto con <strong className="text-barro">{paymentCount} pago(s)</strong> y
+                                      sus comprobantes
+                                    </>
+                                  )}
+                                  {attachmentCount > 0 && <> y {attachmentCount} documento(s) adjunto(s)</>}.
+                                  {lease.active && (
+                                    <> El local {lease.space.name} quedará <strong className="text-selva">Disponible</strong>.</>
+                                  )}
+                                </p>
+                                <p className="mt-2">
+                                  Esta acción no se puede deshacer. Para conservar el historial de pagos use
+                                  «Terminar contrato».
+                                </p>
+                              </>
+                            }
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CollapsibleSection>
     </div>
   );
 }
