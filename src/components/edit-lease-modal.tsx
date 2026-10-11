@@ -27,7 +27,7 @@ export function EditLeaseModal({
   const [tenantId, setTenantId] = useState(lease.tenant_id);
   const [startDate, setStartDate] = useState(lease.start_date);
   const [endDate, setEndDate] = useState(lease.end_date);
-  const [monthlyRent, setMonthlyRent] = useState(lease.monthly_rent);
+  const [monthlyRent, setMonthlyRent] = useState<number | string>(lease.monthly_rent);
   const [isActive, setIsActive] = useState(lease.active);
 
   useEffect(() => {
@@ -194,10 +194,10 @@ export function EditLeaseModal({
                   name="monthly_rent"
                   type="number"
                   min="1"
-                  step="100"
+                  step="any"
                   required
                   value={monthlyRent}
-                  onChange={(e) => setMonthlyRent(Number(e.target.value))}
+                  onChange={(e) => setMonthlyRent(e.target.value)}
                   className="field min-h-11 text-sm"
                 />
               </div>

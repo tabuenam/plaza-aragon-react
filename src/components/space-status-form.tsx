@@ -41,7 +41,7 @@ export function SpaceStatusForm({ space }: { space: Space }) {
             name="price"
             type="number"
             min="0"
-            step="100"
+            step="any"
             defaultValue={space.price}
             className="field min-h-10 text-xs px-2.5 py-1.5"
           />

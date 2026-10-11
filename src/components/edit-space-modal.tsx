@@ -189,7 +189,7 @@ export function EditSpaceModal({ space }: { space: Space }) {
                     name="price"
                     type="number"
                     min="0"
-                    step="100"
+                    step="any"
                     required
                     defaultValue={space.price}
                     className="field min-h-11 text-sm"

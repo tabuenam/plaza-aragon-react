@@ -38,7 +38,7 @@ export function CreateLeaseModal({
     : (availableSpaces[0] || spaces[0]);
 
   const [selectedSpaceId, setSelectedSpaceId] = useState(defaultSpace?.id || "");
-  const [rentAmount, setRentAmount] = useState(defaultSpace?.price || 8000);
+  const [rentAmount, setRentAmount] = useState<number | string>(defaultSpace?.price || 8000);
   const [startDate, setStartDate] = useState(todayInHonduras());
   const [endDate, setEndDate] = useState(defaultEndDate(todayInHonduras()));
 
@@ -222,10 +222,10 @@ export function CreateLeaseModal({
                   name="monthly_rent"
                   type="number"
                   min="1"
-                  step="100"
+                  step="any"
                   required
                   value={rentAmount}
-                  onChange={(e) => setRentAmount(Number(e.target.value))}
+                  onChange={(e) => setRentAmount(e.target.value)}
                   className="field min-h-11 text-sm"
                 />
                 <p className="mt-1 text-[11px] text-piedra">
