@@ -1,5 +1,5 @@
 import { Logo } from "@/components/logo";
-import { SpaceGallery } from "@/components/space-gallery";
+import { SpaceGallery } from "@/app/space-gallery";
 import { StatusBadge } from "@/components/status-badge";
 import { getPublicSpaces } from "@/lib/data";
 import { formatMoney } from "@/lib/format";

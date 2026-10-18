@@ -5,9 +5,9 @@ import { requireAdmin } from "@/lib/auth";
 import { getAdminPayments, getAllSpacesWithActiveLease } from "@/lib/data";
 import { currentPeriod, formatMoney, formatPeriod } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
-import { PaymentReviewCard } from "@/components/payment-review-card";
-import { SpaceStatusForm } from "@/components/space-status-form";
-import { EditSpaceModal } from "@/components/edit-space-modal";
+import { PaymentReviewCard } from "@/app/admin/pagos/payment-review-card";
+import { SpaceStatusForm } from "@/app/admin/space-status-form";
+import { EditSpaceModal } from "@/app/admin/edit-space-modal";
 
 export const metadata: Metadata = {
   title: "Administración",

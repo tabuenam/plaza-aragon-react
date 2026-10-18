@@ -22,12 +22,12 @@ Next.js 16 (App Router, Cache Components) · React 19 · TypeScript · Tailwind 
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (service role, server-only, never expose), `NEXT_PUBLIC_WHATSAPP_NUMBER`.
 
 ## Layout
-- `src/app/` — `/` public catalog · `/ingresar` login · `/portal` tenant (payments, receipt upload) · `/admin` owner (`pagos`, `contratos`, `historial`). Each area has `actions.ts` (server actions).
+- `src/app/` — `/` public catalog · `/ingresar` login · `/portal` tenant (payments, receipt upload) · `/admin` owner (`pagos`, `contratos`, `historial`). Each area colocates its feature-specific components, modals, and `actions.ts` (server actions).
 - `src/proxy.ts` — Next 16 proxy (replaces middleware): refreshes the Supabase session and redirects by role (unauthenticated → `/ingresar`; admin ↔ `/admin`, tenant ↔ `/portal`).
 - `src/lib/auth.ts` — `requireUser/requireTenant/requireAdmin` (role from JWT `app_metadata.role === "admin"`).
 - `src/lib/supabase/` — `server.ts` (cookie-based SSR client), `static.ts` (public/cached reads), `admin.ts` (service-role client; server only).
 - `src/lib/data.ts` queries · `types.ts` · `format.ts` · `compress-image.ts` (client-side receipt compression).
-- `src/components/` — shared UI and modals (lease/tenant/space forms, payment review).
+- `src/components/` — shared cross-feature UI components (`logo`, `status-badge`, `submit-button`, `form-message`, `contract-attachments-view`).
 - `supabase/` — `schema.sql`, `migrations/`, `seed.sql`, `config.toml`.
 
 ## Data model

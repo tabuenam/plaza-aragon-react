@@ -5,13 +5,13 @@ import { requireAdmin } from "@/lib/auth";
 import { getAdminTenants, getAllLeases, getAllSpaces } from "@/lib/data";
 import { daysUntil, formatDate, formatMoney } from "@/lib/format";
 import { deleteLeaseAction, deleteTenantAction } from "@/app/admin/actions";
-import { CollapsibleSection } from "@/components/collapsible-section";
-import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
-import { CreateLeaseModal } from "@/components/create-lease-modal";
-import { EditLeaseModal } from "@/components/edit-lease-modal";
-import { TerminateLeaseButton } from "@/components/terminate-lease-button";
-import { CreateTenantModal } from "@/components/create-tenant-modal";
-import { EditTenantModal } from "@/components/edit-tenant-modal";
+import { CollapsibleSection } from "@/app/admin/contratos/collapsible-section";
+import { ConfirmDeleteButton } from "@/app/admin/contratos/confirm-delete-button";
+import { CreateLeaseModal } from "@/app/admin/contratos/create-lease-modal";
+import { EditLeaseModal } from "@/app/admin/contratos/edit-lease-modal";
+import { TerminateLeaseButton } from "@/app/admin/contratos/terminate-lease-button";
+import { CreateTenantModal } from "@/app/admin/contratos/create-tenant-modal";
+import { EditTenantModal } from "@/app/admin/contratos/edit-tenant-modal";
 import { ContractAttachmentsView } from "@/components/contract-attachments-view";
 
 export const metadata: Metadata = {

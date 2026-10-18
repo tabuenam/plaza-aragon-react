@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { getAdminPayments } from "@/lib/data";
 import { currentPeriod, formatPeriod, MONTHS } from "@/lib/format";
-import { PaymentReviewCard } from "@/components/payment-review-card";
+import { PaymentReviewCard } from "@/app/admin/pagos/payment-review-card";
 
 export const metadata: Metadata = {
   title: "Verificación de Pagos",

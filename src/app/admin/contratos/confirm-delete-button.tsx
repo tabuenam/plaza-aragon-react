@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useId, useState, type ReactNode } from "react";
-import { AdminDialog } from "@/components/admin-dialog";
+import { AdminDialog } from "@/app/admin/admin-dialog";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState } from "@/lib/types";
 

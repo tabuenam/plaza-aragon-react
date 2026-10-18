@@ -2,7 +2,7 @@
 
 import { useActionState, useId, useState } from "react";
 import { updateTenantAction } from "@/app/admin/actions";
-import { AdminDialog } from "@/components/admin-dialog";
+import { AdminDialog } from "@/app/admin/admin-dialog";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import type { AdminTenant, FormState } from "@/lib/types";
