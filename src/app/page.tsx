@@ -77,6 +77,10 @@ const FAQS = [
     q: "¿Cómo se realizan y registran los pagos mensuales de renta?",
     a: "Cada inquilino recibe una cuenta de acceso al Portal Digital de Plaza Aragón. Desde su teléfono móvil puede tomar una foto al comprobante de transferencia bancaria, subirlo en segundos y consultar su historial verificado y su contrato vigente.",
   },
+  {
+    q: "¿De cuánto es el depósito de garantía y cómo se devuelve?",
+    a: "El depósito de garantía equivale a un mes de renta. Este valor se reintegra al finalizar el contrato una vez desocupado el local, verificando que se entregue en las mismas buenas condiciones en las que fue recibido.",
+  },
 ];
 
 export default async function HomePage() {
