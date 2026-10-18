@@ -157,7 +157,7 @@ export default async function HomePage() {
                   Portal digital de pagos
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-piedra">
-                  Suba su comprobante bancario desde el celular y consulte su contrato e historial en línea.
+                  Suba su comprobante bancario desde el teléfono móvil y consulte su contrato e historial en línea.
                 </p>
               </div>
             </div>
