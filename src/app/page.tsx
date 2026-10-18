@@ -1,5 +1,6 @@
 import { PlazaInteractiveSection } from "@/app/catalog-explorer";
 import { Logo } from "@/components/logo";
+import { TechneticaCredit } from "@/components/technetica-credit";
 import { getPublicSpaces } from "@/lib/data";
 import type { Space } from "@/lib/types";
 import Link from "next/link";
@@ -216,6 +217,8 @@ export default async function HomePage() {
               </Link>
               <span>·</span>
               <span>© {new Date().getFullYear()} Plaza Aragón</span>
+              <span>·</span>
+              <TechneticaCredit />
             </div>
           </div>
         </div>

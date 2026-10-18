@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { signOutAction } from "@/app/ingresar/actions";
 import { Logo } from "@/components/logo";
+import { TechneticaCredit } from "@/components/technetica-credit";
 import { AdminBreadcrumbs, AdminNavTabs } from "@/app/admin/admin-nav";
 import { AdminToastProvider } from "@/app/admin/admin-toast";
 
@@ -91,9 +92,13 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         <footer className="border-t border-crema bg-white py-6">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 text-xs text-piedra sm:flex-row sm:px-6">
             <span>Plaza Aragón · Panel de Propietario y Control de Arrendamientos · Olanchito, Yoro</span>
-            <Link href="/" className="font-semibold text-azul hover:underline">
-              Ver vitrina pública →
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+              <Link href="/" className="font-semibold text-azul hover:underline">
+                Ver vitrina pública →
+              </Link>
+              <span>·</span>
+              <TechneticaCredit />
+            </div>
           </div>
         </footer>
       </div>

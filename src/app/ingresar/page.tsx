@@ -1,5 +1,6 @@
 import { SignInForm } from "@/app/ingresar/sign-in-form";
 import { Logo } from "@/components/logo";
+import { TechneticaCredit } from "@/components/technetica-credit";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -78,6 +79,19 @@ export default function IngresarPage() {
           </div>
         </div>
       </main>
+
+      <footer className="border-t border-crema bg-white py-5">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 text-xs text-piedra sm:flex-row sm:px-6 lg:px-8">
+          <span>© {new Date().getFullYear()} Plaza Aragón · Olanchito, Yoro</span>
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+            <Link href="/" className="font-semibold text-azul hover:underline">
+              ← Volver al catálogo
+            </Link>
+            <span>·</span>
+            <TechneticaCredit />
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
