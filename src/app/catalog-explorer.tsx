@@ -11,7 +11,7 @@ type FilterOption = "all" | "open" | "occupied";
 const SPACE_HIGHLIGHTS: Record<number, string[]> = {
   1: ["Planta baja", "Vitrina panorámica", "Acceso directo"],
   2: ["Esquinero", "Alta visibilidad", "Medidor propio"],
-  3: ["Porcelanato", "Baño privado", "Prep. A/C"],
+  3: ["Porcelanato", "Baño privado", "A/C instalado"],
   4: ["Ideal consultorio", "Iluminación LED", "Baño privado"],
   5: ["Doble frente", "Área de bodega", "Mayor metraje"],
 };
@@ -199,8 +199,8 @@ export function PlazaInteractiveSection({
               aria-selected={filter === "all"}
               onClick={() => setFilter("all")}
               className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${filter === "all"
-                  ? "bg-azul text-white"
-                  : "text-piedra hover:bg-arena hover:text-tinta"
+                ? "bg-azul text-white"
+                : "text-piedra hover:bg-arena hover:text-tinta"
                 }`}
             >
               Todos ({spaces.length})
@@ -211,8 +211,8 @@ export function PlazaInteractiveSection({
               aria-selected={filter === "open"}
               onClick={() => setFilter("open")}
               className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${filter === "open"
-                  ? "bg-azul text-white"
-                  : "text-piedra hover:bg-arena hover:text-tinta"
+                ? "bg-azul text-white"
+                : "text-piedra hover:bg-arena hover:text-tinta"
                 }`}
             >
               Disponibles / Preventa ({openCount})
@@ -223,8 +223,8 @@ export function PlazaInteractiveSection({
               aria-selected={filter === "occupied"}
               onClick={() => setFilter("occupied")}
               className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${filter === "occupied"
-                  ? "bg-azul text-white"
-                  : "text-piedra hover:bg-arena hover:text-tinta"
+                ? "bg-azul text-white"
+                : "text-piedra hover:bg-arena hover:text-tinta"
                 }`}
             >
               Ocupados ({occupiedCount})
