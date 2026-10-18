@@ -6,7 +6,7 @@ import { submitPaymentAction } from "@/app/portal/actions";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { compressImage } from "@/lib/compress-image";
-import { currentPeriod, MONTHS } from "@/lib/format";
+import { currentPeriod, formatMoney, MONTHS } from "@/lib/format";
 import type { FormState } from "@/lib/types";
 
 const initialState: FormState = { ok: true, message: "" };
@@ -110,24 +110,34 @@ export function PaymentForm({ defaultRent }: { defaultRent: number }) {
       </div>
 
       <div>
-        <label htmlFor="amount" className="label">
-          Monto pagado (HNL)
-        </label>
-        <input
-          id="amount"
-          name="amount"
-          type="number"
-          step="0.01"
-          min="1"
-          defaultValue={defaultRent}
-          required
-          inputMode="decimal"
-          className="field"
-        />
+        <div className="mb-1.5 flex items-center justify-between">
+          <label htmlFor="amount" className="text-sm font-semibold text-tinta">
+            Monto transferido (HNL)
+          </label>
+          <span className="text-xs font-medium text-piedra">
+            Canon pactado: <strong className="text-azul">{formatMoney(defaultRent)}</strong>
+          </span>
+        </div>
+        <div className="relative">
+          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 font-display font-bold text-piedra">
+            L
+          </span>
+          <input
+            id="amount"
+            name="amount"
+            type="number"
+            step="0.01"
+            min="1"
+            defaultValue={defaultRent}
+            required
+            inputMode="decimal"
+            className="field pl-9 font-display font-bold tabular-nums"
+          />
+        </div>
       </div>
 
       <div>
-        <span className="label">Comprobante de transferencia bancaria</span>
+        <span className="label">Comprobante bancario (foto o captura)</span>
 
         <input
           ref={fileInputRef}
@@ -149,25 +159,30 @@ export function PaymentForm({ defaultRent }: { defaultRent: number }) {
         />
 
         {previewUrl ? (
-          <div className="relative mt-2 overflow-hidden rounded-2xl border-2 border-turquesa bg-arena p-2">
-            <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl bg-white sm:aspect-16/9">
+          <div className="relative mt-2 overflow-hidden rounded-2xl border-2 border-turquesa bg-arena p-3">
+            <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl bg-white shadow-2xs">
               <Image src={previewUrl} alt="Vista previa del comprobante" fill className="object-contain" />
             </div>
             <div className="mt-3 flex items-center justify-between px-1">
-              <span className="text-xs font-semibold text-selva">✓ Imagen lista para subir</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-selva">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-selva text-[10px] text-white">
+                  ✓
+                </span>
+                Comprobante optimizado y listo
+              </span>
               <button
                 type="button"
                 onClick={handleClearImage}
-                className="text-xs font-semibold text-barro hover:underline"
+                className="rounded-lg px-2 py-1 text-xs font-bold text-barro transition hover:bg-barro-claro/50 cursor-pointer"
               >
                 Cambiar imagen
               </button>
             </div>
           </div>
         ) : (
-          <div className="mt-2 rounded-2xl border-2 border-dashed border-crema bg-white p-5 text-center transition hover:border-turquesa">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-turquesa-claro text-azul">
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mt-2 rounded-2xl border-2 border-dashed border-crema bg-arena/40 p-5 text-center transition hover:border-turquesa hover:bg-arena/70">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-turquesa-claro text-azul shadow-2xs">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -177,17 +192,21 @@ export function PaymentForm({ defaultRent }: { defaultRent: number }) {
               </svg>
             </div>
 
-            <p className="mt-3 text-sm font-semibold text-tinta">Suba la captura o foto del comprobante</p>
-            <p className="mt-1 text-xs text-piedra">Formatos admitidos: JPG, PNG, WebP o captura de pantalla</p>
+            <p className="mt-3 text-sm font-bold text-tinta">
+              {isProcessingImage ? "Optimizando imagen…" : "Adjunte el recibo de su transferencia"}
+            </p>
+            <p className="mt-1 text-xs text-piedra">
+              Puede tomar una fotografía con la cámara de su teléfono o elegir una captura de pantalla.
+            </p>
 
-            <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
+            <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={isProcessingImage}
-                className="btn-primary min-h-11 text-sm"
+                className="btn-primary min-h-11 px-3 text-xs sm:text-sm"
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -196,16 +215,16 @@ export function PaymentForm({ defaultRent }: { defaultRent: number }) {
                   />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Tomar foto con cámara
+                Usar cámara
               </button>
 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isProcessingImage}
-                className="btn-ghost min-h-11 text-sm"
+                className="btn-ghost min-h-11 px-3 text-xs sm:text-sm"
               >
-                Elegir de galería o archivos
+                Elegir de galería
               </button>
             </div>
           </div>
@@ -215,11 +234,13 @@ export function PaymentForm({ defaultRent }: { defaultRent: number }) {
       <FormMessage state={state} />
 
       <SubmitButton
-        pendingText={isPending ? "Subiendo comprobante…" : "Procesando…"}
+        pendingText={isPending ? "Enviando comprobante…" : "Procesando…"}
+        disabled={!compressedFile || isProcessingImage}
         className="btn-accent w-full"
       >
-        Registrar pago de renta
+        Enviar comprobante para verificación
       </SubmitButton>
     </form>
   );
 }
+

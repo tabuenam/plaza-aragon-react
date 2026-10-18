@@ -9,16 +9,24 @@ type Props = {
   className?: string;
   name?: string;
   value?: string;
+  disabled?: boolean;
 };
 
-export function SubmitButton({ children, pendingText = "Guardando…", className = "btn-primary", name, value }: Props) {
+export function SubmitButton({
+  children,
+  pendingText = "Guardando…",
+  className = "btn-primary",
+  name,
+  value,
+  disabled = false,
+}: Props) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
       name={name}
       value={value}
-      disabled={pending}
+      disabled={pending || disabled}
       aria-busy={pending}
       className={`inline-flex items-center justify-center gap-1.5 ${className}`}
     >

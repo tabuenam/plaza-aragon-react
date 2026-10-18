@@ -12,7 +12,14 @@ import type { AdminPayment } from "@/lib/data";
 export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
   const { notify } = useAdminToast();
   const [isRejecting, setIsRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   const [showFullImage, setShowFullImage] = useState(false);
+
+  const quickReasons = [
+    "Imagen borrosa o ilegible",
+    "Monto incompleto",
+    "Fecha o referencia no visible",
+  ];
 
   async function handleVerify(formData: FormData) {
     await verifyPaymentAction(formData);
@@ -25,6 +32,7 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
   async function handleReject(formData: FormData) {
     await rejectPaymentAction(formData);
     setIsRejecting(false);
+    setRejectReason("");
     notify(
       `Comprobante de ${payment.lease?.space?.name || "local"} rechazado.`,
       "error"
@@ -50,7 +58,7 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
         </div>
 
         <div className="text-left sm:text-right">
-          <p className="font-display text-xl font-bold text-azul">
+          <p className="font-display text-xl font-bold tabular-nums text-azul">
             {formatMoney(payment.amount)}
           </p>
           <p className="text-xs text-piedra">
@@ -82,7 +90,7 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
               <button
                 type="button"
                 onClick={() => setShowFullImage(true)}
-                className="text-xs font-semibold text-azul hover:underline block"
+                className="text-xs font-semibold text-azul hover:underline block cursor-pointer"
               >
                 Ampliar comprobante 🔍
               </button>
@@ -114,11 +122,25 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
                 <label htmlFor={`reject-reason-${payment.id}`} className="label text-xs">
                   Motivo del rechazo (visible para el inquilino)
                 </label>
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {quickReasons.map((reason) => (
+                    <button
+                      key={reason}
+                      type="button"
+                      onClick={() => setRejectReason(reason)}
+                      className="rounded-lg border border-crema bg-arena px-2.5 py-1 text-[11px] font-semibold text-tinta transition hover:border-barro/40 hover:bg-barro-claro/40 cursor-pointer"
+                    >
+                      + {reason}
+                    </button>
+                  ))}
+                </div>
                 <input
                   id={`reject-reason-${payment.id}`}
                   name="admin_note"
                   type="text"
                   required
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="Ej: Monto incompleto o imagen ilegible"
                   className="field text-sm"
                 />

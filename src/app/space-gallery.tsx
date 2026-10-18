@@ -1,56 +1,203 @@
-import Image from "next/image";
+"use client";
 
-export function SpaceGallery({ images, name }: { images: string[]; name: string }) {
+import { useState } from "react";
+import Image from "next/image";
+import type { SpaceStatus } from "@/lib/types";
+
+export function SpaceGallery({
+  images,
+  name,
+  unitNumber,
+  status,
+}: {
+  images: string[];
+  name: string;
+  unitNumber?: number;
+  status?: SpaceStatus;
+}) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  const unitLabel = unitNumber ? `0${unitNumber}` : name.replace(/\D/g, "").padStart(2, "0") || "PA";
+
   if (!images || images.length === 0) {
     return (
-      <div className="relative flex aspect-16/10 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-azul/5 via-turquesa/10 to-maiz/10">
-        <div className="text-center p-6">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm text-azul font-display text-lg font-bold">
-            PA
-          </div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-piedra">
-            Plaza Aragón · {name}
+      <div className="group relative flex aspect-16/10 w-full flex-col justify-between overflow-hidden rounded-2xl border border-crema/90 bg-arena blueprint-grid p-4">
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-2.5 py-1 text-[11px] font-bold tracking-wider text-azul uppercase shadow-2xs ring-1 ring-crema">
+            Módulo {unitLabel}
           </span>
+          <span className="font-mono text-[10px] font-semibold tracking-widest text-piedra/80 uppercase">
+            PLANTA BAJA · OLANCHITO
+          </span>
+        </div>
+
+        {/* Architectural elevation SVG */}
+        <div className="my-auto flex items-center justify-center py-2">
+          <svg
+            viewBox="0 0 220 90"
+            className="h-20 w-auto text-azul/85 transition-transform duration-300 group-hover:scale-[1.03]"
+            aria-hidden="true"
+          >
+            {/* Roof cornice */}
+            <rect x="16" y="10" width="188" height="6" rx="2" fill="currentColor" opacity="0.85" />
+            <rect x="22" y="16" width="176" height="64" fill="#ffffff" stroke="currentColor" strokeWidth="2" />
+            {/* Archway / storefront vitrina */}
+            <rect
+              x="34"
+              y="28"
+              width="98"
+              height="52"
+              rx="3"
+              fill={status === "construction" ? "#fdf0cf" : "#daf0f5"}
+              stroke="currentColor"
+              strokeWidth="1.75"
+            />
+            {/* Glass reflection lines */}
+            <line x1="50" y1="34" x2="40" y2="56" stroke="#1693ad" strokeWidth="1.5" opacity="0.5" />
+            <line x1="58" y1="34" x2="46" y2="62" stroke="#1693ad" strokeWidth="1.5" opacity="0.35" />
+            <line x1="83" y1="28" x2="83" y2="80" stroke="currentColor" strokeWidth="1.25" opacity="0.4" />
+            {/* Entrance door */}
+            <path
+              d="M144 80V40a18 18 0 0 1 36 0v40z"
+              fill="#f9e3d8"
+              stroke="#b84a24"
+              strokeWidth="1.75"
+            />
+            <circle cx="151" cy="60" r="2" fill="#b84a24" />
+            {/* Ground line */}
+            <line x1="6" y1="80" x2="214" y2="80" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-crema/70 pt-2 text-[11px] font-medium text-piedra">
+          <span>Vista arquitectónica referencial</span>
+          <span className="font-semibold text-azul">{name}</span>
         </div>
       </div>
     );
   }
 
-  if (images.length === 1) {
-    return (
-      <div className="relative aspect-16/10 w-full overflow-hidden rounded-2xl bg-crema">
-        <Image
-          src={images[0]}
-          alt={`Fotografía de ${name}`}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover"
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="relative">
-      <div className="no-scrollbar flex w-full snap-x snap-mandatory gap-3 overflow-x-auto rounded-2xl pb-2">
-        {images.map((src, index) => (
-          <div
-            key={index}
-            className="relative aspect-16/10 w-[85%] shrink-0 snap-center overflow-hidden rounded-2xl bg-crema sm:w-[90%]"
-          >
-            <Image
-              src={src}
-              alt={`Fotografía ${index + 1} de ${name}`}
-              fill
-              sizes="(max-width: 768px) 85vw, 400px"
-              className="object-cover"
-            />
-            <span className="absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-xs">
-              {index + 1} / {images.length}
-            </span>
+    <>
+      {images.length === 1 ? (
+        <button
+          type="button"
+          onClick={() => setActiveIndex(0)}
+          className="group relative block aspect-16/10 w-full overflow-hidden rounded-2xl bg-crema text-left focus:outline-none"
+          aria-label={`Ampliar fotografía de ${name}`}
+        >
+          <Image
+            src={images[0]}
+            alt={`Fotografía de ${name}`}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition duration-300 group-hover:scale-105"
+          />
+          <span className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg bg-tinta/75 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-xs transition group-hover:bg-azul">
+            Ver foto ↗
+          </span>
+        </button>
+      ) : (
+        <div className="relative">
+          <div className="no-scrollbar flex w-full snap-x snap-mandatory gap-2.5 overflow-x-auto rounded-2xl pb-1">
+            {images.map((src, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setActiveIndex(index)}
+                className="group relative aspect-16/10 w-[86%] shrink-0 snap-center overflow-hidden rounded-2xl bg-crema text-left sm:w-[90%]"
+                aria-label={`Ampliar fotografía ${index + 1} de ${name}`}
+              >
+                <Image
+                  src={src}
+                  alt={`Fotografía ${index + 1} de ${name}`}
+                  fill
+                  sizes="(max-width: 768px) 85vw, 400px"
+                  className="object-cover transition duration-300 group-hover:scale-105"
+                />
+                <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-tinta/75 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-xs">
+                  {index + 1} / {images.length} · Ampliar
+                </span>
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+      )}
+
+      {activeIndex !== null && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Galería de ${name}`}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-tinta/85 p-3 sm:p-6 backdrop-blur-xs"
+          onClick={() => setActiveIndex(null)}
+        >
+          <div
+            className="relative flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-crema px-5 py-3.5">
+              <div>
+                <h4 className="font-display text-base font-bold text-azul">{name}</h4>
+                <p className="text-xs text-piedra">
+                  Fotografía {activeIndex + 1} de {images.length}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveIndex(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-arena text-tinta transition hover:bg-crema"
+                aria-label="Cerrar galería"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="relative aspect-16/10 max-h-[70dvh] w-full bg-tinta/95">
+              <Image
+                src={images[activeIndex]}
+                alt={`Fotografía ${activeIndex + 1} de ${name}`}
+                fill
+                sizes="(max-width: 1024px) 100vw, 900px"
+                className="object-contain"
+              />
+            </div>
+
+            {images.length > 1 && (
+              <div className="flex items-center justify-between border-t border-crema bg-arena/60 px-5 py-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveIndex((prev) => (prev !== null ? (prev - 1 + images.length) % images.length : 0))}
+                  className="btn-ghost min-h-9 px-3.5 py-1.5 text-xs"
+                >
+                  ← Anterior
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {images.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveIndex(idx)}
+                      aria-label={`Ir a foto ${idx + 1}`}
+                      className={`h-2 rounded-full transition-all ${
+                        idx === activeIndex ? "w-6 bg-azul" : "w-2 bg-crema hover:bg-piedra"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveIndex((prev) => (prev !== null ? (prev + 1) % images.length : 0))}
+                  className="btn-ghost min-h-9 px-3.5 py-1.5 text-xs"
+                >
+                  Siguiente →
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
+

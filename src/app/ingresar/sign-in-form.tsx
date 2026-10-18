@@ -23,28 +23,29 @@ export function SignInForm() {
           id="email"
           name="email"
           type="email"
+          inputMode="email"
           required
-          autoComplete="username"
+          autoComplete="email"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck="false"
-          placeholder="inquilino@ejemplo.com"
+          placeholder="inquilino@plaza-aragon.com"
           className="field"
         />
       </div>
 
       <div>
-        <div className="flex items-center justify-between">
-          <label htmlFor="password" className="label">
+        <div className="mb-1.5 flex items-center justify-between">
+          <label htmlFor="password" className="text-sm font-semibold text-tinta">
             Contraseña
           </label>
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="text-xs font-semibold text-azul hover:underline"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-semibold text-azul transition hover:bg-arena cursor-pointer"
             aria-pressed={showPassword}
           >
-            {showPassword ? "Ocultar" : "Mostrar"}
+            {showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
           </button>
         </div>
         <div className="relative">
@@ -56,22 +57,26 @@ export function SignInForm() {
             autoComplete="current-password"
             placeholder="••••••••"
             enterKeyHint="done"
-            className="field pr-12"
+            className="field"
           />
         </div>
       </div>
 
       <FormMessage state={state} />
 
-      <SubmitButton pendingText="Iniciando sesión…" className="btn-primary w-full">
-        Iniciar sesión
+      <SubmitButton pendingText="Verificando credenciales…" className="btn-primary w-full">
+        Ingresar a mi cuenta →
       </SubmitButton>
 
-      <div className="pt-2 text-center text-sm text-piedra">
-        <Link href="/" className="hover:text-azul hover:underline">
-          ← Volver a la página principal
+      <div className="border-t border-crema/80 pt-4 text-center text-sm text-piedra">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 font-semibold text-piedra transition hover:text-azul"
+        >
+          ← Volver al catálogo de Plaza Aragón
         </Link>
       </div>
     </form>
   );
 }
+

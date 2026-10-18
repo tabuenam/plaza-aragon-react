@@ -6,32 +6,51 @@
 }
 
 @theme {
-  --color-azul: #0d4a7a;
-  --color-azul-oscuro: #082f4f;
-  --color-turquesa: #1fa9c4;
-  --color-turquesa-claro: #dcf2f7;
-  --color-barro: #b9542a;
-  --color-barro-claro: #f7e2d5;
-  --color-maiz: #e5a82a;
-  --color-maiz-claro: #fcf0d2;
-  --color-selva: #2a6547;
-  --color-selva-claro: #dbeee2;
-  --color-arena: #faf6ef;
-  --color-crema: #efe5d4;
-  --color-tinta: #1d2733;
-  --color-piedra: #5b6673;
+  --color-azul: #0b3d66;
+  --color-azul-oscuro: #06233b;
+  --color-turquesa: #1693ad;
+  --color-turquesa-claro: #daf0f5;
+  --color-barro: #b84a24;
+  --color-barro-claro: #f9e3d8;
+  --color-maiz: #df9b1a;
+  --color-maiz-claro: #fdf0cf;
+  --color-selva: #1f5e43;
+  --color-selva-claro: #d7eee2;
+  --color-arena: #f8f4ec;
+  --color-crema: #e5dac7;
+  --color-tinta: #16202a;
+  --color-piedra: #52606d;
 }
 
 @utility lenca-band {
   background-color: var(--color-arena);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='12' viewBox='0 0 48 12'%3E%3Cpath d='M0 12L6 0l6 12z' fill='%23b9542a'/%3E%3Cpath d='M12 0l6 12 6-12z' fill='%23e5a82a'/%3E%3Cpath d='M24 12l6-12 6 12z' fill='%230d4a7a'/%3E%3Cpath d='M36 0l6 12 6-12z' fill='%231fa9c4'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='10' viewBox='0 0 48 10'%3E%3Cpath d='M0 10L6 0l6 10z' fill='%23b84a24'/%3E%3Cpath d='M12 0l6 10 6-10z' fill='%23df9b1a'/%3E%3Cpath d='M24 10l6-10 6 10z' fill='%230b3d66'/%3E%3Cpath d='M36 0l6 10 6-10z' fill='%231693ad'/%3E%3C/svg%3E");
   background-size: 48px 100%;
   background-repeat: repeat-x;
 }
 
 @utility lenca-diamonds {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 4l16 16-16 16L4 20z M20 12l8 8-8 8-8-8z' fill='none' stroke='%23ffffff' stroke-opacity='0.09' stroke-width='1.5'/%3E%3C/svg%3E");
-  background-size: 40px 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cpath d='M22 4l18 18-18 18L4 22z M22 13l9 9-9 9-9-9z' fill='none' stroke='%23ffffff' stroke-opacity='0.08' stroke-width='1.25'/%3E%3C/svg%3E");
+  background-size: 44px 44px;
+}
+
+@utility blueprint-grid {
+  background-image:
+    linear-gradient(to right, rgba(11, 61, 102, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 61, 102, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+@utility hero-fluid-title {
+  font-size: clamp(2.15rem, 1.35rem + 3.2vw, 3.85rem);
+  line-height: 1.07;
+  letter-spacing: -0.025em;
+}
+
+@utility section-fluid-title {
+  font-size: clamp(1.6rem, 1.2rem + 1.5vw, 2.35rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 @utility no-scrollbar {
@@ -41,6 +60,13 @@
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   :focus-visible {
@@ -53,11 +79,18 @@
   textarea {
     font-size: 1rem;
   }
+
+  [inert],
+  [inert] * {
+    opacity: 0.5;
+    cursor: default;
+    user-select: none;
+  }
 }
 
 @layer components {
   .field {
-    @apply block w-full min-h-12 rounded-xl border border-crema bg-white px-4 py-3 text-base text-tinta shadow-sm transition placeholder:text-piedra/60 focus:border-turquesa focus:outline-none focus:ring-2 focus:ring-turquesa/30;
+    @apply block w-full min-h-12 rounded-xl border border-crema bg-white px-4 py-3 text-base text-tinta shadow-2xs transition placeholder:text-piedra/60 hover:border-piedra/40 focus:border-turquesa focus:outline-none focus:ring-3 focus:ring-turquesa/25;
   }
 
   .label {
@@ -65,22 +98,27 @@
   }
 
   .btn {
-    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer;
   }
 
   .btn-primary {
-    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 bg-azul text-white shadow-sm hover:bg-azul-oscuro;
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 bg-azul text-white shadow-sm hover:bg-azul-oscuro cursor-pointer;
   }
 
   .btn-accent {
-    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 bg-barro text-white shadow-sm hover:bg-barro/90;
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 bg-barro text-white shadow-sm hover:bg-[#9e3d1c] cursor-pointer;
   }
 
   .btn-ghost {
-    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 border border-crema bg-white text-tinta hover:bg-crema/50;
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 border border-crema bg-white text-tinta hover:border-piedra/40 hover:bg-arena cursor-pointer;
   }
 
   .card {
-    @apply rounded-3xl bg-white p-5 shadow-sm ring-1 ring-crema sm:p-6;
+    @apply rounded-3xl bg-white p-5 shadow-xs ring-1 ring-crema/90 sm:p-6;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-barro;
   }
 }
+
