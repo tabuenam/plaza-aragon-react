@@ -1,5 +1,5 @@
-import { Logo } from "@/components/logo";
 import { PlazaInteractiveSection } from "@/app/catalog-explorer";
+import { Logo } from "@/components/logo";
 import { getPublicSpaces } from "@/lib/data";
 import type { Space } from "@/lib/types";
 import Link from "next/link";
@@ -62,7 +62,7 @@ const fallbackSpaces: Space[] = [
 const FAQS = [
   {
     q: "¿Cuál es la duración mínima y máxima de los contratos de arrendamiento?",
-    a: "Ofrecemos contratos flexibles de 3, 6 o 12 meses renovables, adaptados tanto a negocios consolidados en Olanchito como a nuevos proyectos comerciales o sucursales.",
+    a: "Ofrecemos contratos flexibles de 6 a 12+ meses renovables, adaptados tanto a negocios consolidados en Olanchito como a nuevos proyectos comerciales o sucursales.",
   },
   {
     q: "¿Qué servicios incluye cada local comercial?",
@@ -208,7 +208,7 @@ export default async function HomePage() {
                   Gestión de Pagos y Contrato Sin Papel
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-piedra">
-                  Olvídese de recibos extraviados: suba la foto de su transferencia bancaria desde su celular, reciba
+                  Olvídese de recibos extraviados: suba la foto de su transferencia bancaria desde su teléfono móvil, reciba
                   confirmación de verificación y consulte su contrato cuando lo necesite.
                 </p>
               </div>
@@ -263,7 +263,7 @@ export default async function HomePage() {
                   <span className="font-mono text-xs font-bold text-turquesa-claro">PASO 02</span>
                   <h3 className="mt-2 font-display text-base font-bold text-white">Firma de Contrato</h3>
                   <p className="mt-1.5 text-xs leading-relaxed text-crema/85">
-                    Acordamos plazo (3 a 12 meses), entregamos llaves y digitalizamos su contrato firmado.
+                    Acordamos plazo (6 a 12+ meses), entregamos llaves y digitalizamos su contrato firmado.
                   </p>
                 </div>
 
@@ -271,7 +271,7 @@ export default async function HomePage() {
                   <span className="font-mono text-xs font-bold text-selva-claro">PASO 03</span>
                   <h3 className="mt-2 font-display text-base font-bold text-white">Acceso al Portal</h3>
                   <p className="mt-1.5 text-xs leading-relaxed text-crema/85">
-                    Reciba su cuenta de inquilino para reportar pagos mensuales desde su celular en segundos.
+                    Reciba su cuenta de inquilino para reportar pagos mensuales desde su teléfono móvil en segundos.
                   </p>
                 </div>
               </div>

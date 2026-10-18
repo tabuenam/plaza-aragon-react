@@ -86,7 +86,7 @@ export function PlazaInteractiveSection({
 
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-crema/90 sm:text-lg">
                 Locales comerciales en planta baja sobre zona de alto tráfico peatonal y vehicular. Acabados modernos,
-                servicios independientes y contratos flexibles de <strong>3 a 12 meses</strong> con gestión digital.
+                servicios independientes y contratos flexibles de <strong>6 a 12+ meses</strong> con gestión digital.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -134,7 +134,7 @@ export function PlazaInteractiveSection({
                     Plazo Flexible
                   </dt>
                   <dd className="mt-1 font-display text-2xl font-bold tabular-nums text-turquesa-claro sm:text-3xl">
-                    3–12 meses
+                    6–12+ meses
                   </dd>
                 </div>
                 <div>
@@ -201,8 +201,8 @@ export function PlazaInteractiveSection({
                         type="button"
                         onClick={() => handleSelectFromSchematic(space)}
                         className={`group flex w-full items-center justify-between gap-3 rounded-2xl border p-3 text-left transition duration-150 cursor-pointer ${isSelected
-                            ? "border-maiz bg-white/20 ring-2 ring-maiz/50"
-                            : "border-white/15 bg-azul-oscuro/55 hover:border-white/35 hover:bg-white/15"
+                          ? "border-maiz bg-white/20 ring-2 ring-maiz/50"
+                          : "border-white/15 bg-azul-oscuro/55 hover:border-white/35 hover:bg-white/15"
                           }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
@@ -283,8 +283,8 @@ export function PlazaInteractiveSection({
               aria-selected={filter === "all"}
               onClick={() => setFilter("all")}
               className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${filter === "all"
-                  ? "bg-azul text-white shadow-2xs"
-                  : "text-piedra hover:bg-arena hover:text-tinta"
+                ? "bg-azul text-white shadow-2xs"
+                : "text-piedra hover:bg-arena hover:text-tinta"
                 }`}
             >
               Todos ({spaces.length})
@@ -295,8 +295,8 @@ export function PlazaInteractiveSection({
               aria-selected={filter === "open"}
               onClick={() => setFilter("open")}
               className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${filter === "open"
-                  ? "bg-azul text-white shadow-2xs"
-                  : "text-piedra hover:bg-arena hover:text-tinta"
+                ? "bg-azul text-white shadow-2xs"
+                : "text-piedra hover:bg-arena hover:text-tinta"
                 }`}
             >
               Disponibles / Preventa ({openCount})
@@ -307,8 +307,8 @@ export function PlazaInteractiveSection({
               aria-selected={filter === "occupied"}
               onClick={() => setFilter("occupied")}
               className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${filter === "occupied"
-                  ? "bg-azul text-white shadow-2xs"
-                  : "text-piedra hover:bg-arena hover:text-tinta"
+                ? "bg-azul text-white shadow-2xs"
+                : "text-piedra hover:bg-arena hover:text-tinta"
                 }`}
             >
               Ocupados ({occupiedCount})
@@ -334,8 +334,8 @@ export function PlazaInteractiveSection({
                 key={space.id}
                 onClick={() => setHighlightedId(space.id)}
                 className={`card group flex flex-col justify-between transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${isHighlighted
-                    ? "ring-2 ring-barro shadow-md bg-gradient-to-b from-white to-barro-claro/15"
-                    : ""
+                  ? "ring-2 ring-barro shadow-md bg-gradient-to-b from-white to-barro-claro/15"
+                  : ""
                   }`}
               >
                 <div>
@@ -382,7 +382,7 @@ export function PlazaInteractiveSection({
                       <span className="block text-[11px] font-semibold uppercase tracking-wider text-piedra">
                         Cuota mensual
                       </span>
-                      <span className="text-xs text-piedra">Contrato 3 a 12 meses</span>
+                      <span className="text-xs text-piedra">Contrato de 6 o 12+ meses</span>
                     </div>
                     <div className="text-right">
                       <span className="font-display text-xl font-bold tabular-nums text-azul sm:text-2xl">

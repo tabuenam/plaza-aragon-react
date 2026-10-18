@@ -1,7 +1,7 @@
+import { SignInForm } from "@/app/ingresar/sign-in-form";
+import { Logo } from "@/components/logo";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
-import { SignInForm } from "@/app/ingresar/sign-in-form";
 
 export const metadata: Metadata = {
   title: "Ingresar al Portal",
@@ -43,7 +43,7 @@ export default function IngresarPage() {
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-selva text-[11px] font-bold text-white">
                   ✓
                 </span>
-                <span>Suba comprobantes directo desde la cámara de su celular.</span>
+                <span>Suba comprobantes directo desde la cámara de su teléfono móvil.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-turquesa text-[11px] font-bold text-white">

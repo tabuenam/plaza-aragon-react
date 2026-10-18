@@ -26,7 +26,7 @@ El sistema permitirá al administrador editar los siguientes campos del modelo `
 ## 3. Especificación de Experiencia de Usuario (UX) y Diseño de Interfaz (UI)
 
 ### 3.1. Filosofía de Diseño
-* **Mobile-First & Touch-Friendly:** El propietario a menudo inspecciona la plaza desde su teléfono celular. Todos los campos de entrada, botones de acción y zonas de carga deben tener un área táctil mínima de 44px (`min-h-11`).
+* **Mobile-First & Touch-Friendly:** El propietario a menudo inspecciona la plaza desde su teléfono teléfono móvil. Todos los campos de entrada, botones de acción y zonas de carga deben tener un área táctil mínima de 44px (`min-h-11`).
 * **Estética Plaza Aragón:** Uso coherente de la paleta identitaria (Azul `#0d4a7a`, Turquesa `#1fa9c4`, Maíz `#e5a82a`, Selva `#2a6547`, Barro `#b9542a`, Arena `#faf6ef`, Crema `#efe5d4`).
 * **Flujo no invasivo (Modal / Bottom Sheet):** En lugar de navegar a una página independiente que rompa el flujo de trabajo en el panel, se utilizará un diálogo accesible (`EditSpaceModal`) que en móviles se despliega como hoja inferior o pantalla completa adaptada, y en escritorio como modal centrado con fondo desenfocado (`backdrop-blur-sm`).
 

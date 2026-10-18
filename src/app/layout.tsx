@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: "%s · Plaza Aragón",
   },
   description:
-    "Locales comerciales en renta en Olanchito, Yoro, Honduras. Contratos de 6 a 12 meses en Plaza Aragón.",
+    "Locales comerciales en renta en Olanchito, Yoro, Honduras. Contratos de 6 a 12+ meses en Plaza Aragón.",
 };
 
 export const viewport: Viewport = {
