@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState, useRef, useState, useTransition } from "react";
-import Image from "next/image";
 import { submitPaymentAction } from "@/app/portal/actions";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { compressImage } from "@/lib/compress-image";
 import { currentPeriod, formatMoney, MONTHS } from "@/lib/format";
 import type { FormState } from "@/lib/types";
+import Image from "next/image";
+import { useActionState, useRef, useState, useTransition } from "react";
 
 const initialState: FormState = { ok: true, message: "" };
 
@@ -115,7 +115,7 @@ export function PaymentForm({ defaultRent }: { defaultRent: number }) {
             Monto transferido (HNL)
           </label>
           <span className="text-xs font-medium text-piedra">
-            Canon pactado: <strong className="text-azul">{formatMoney(defaultRent)}</strong>
+            Cuota pactada: <strong className="text-azul">{formatMoney(defaultRent)}</strong>
           </span>
         </div>
         <div className="relative">

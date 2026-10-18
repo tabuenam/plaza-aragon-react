@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
-import { connection } from "next/server";
+import { PaymentForm } from "@/app/portal/payment-form";
+import { ContractAttachmentsView } from "@/components/contract-attachments-view";
+import { StatusBadge } from "@/components/status-badge";
 import { requireTenant } from "@/lib/auth";
 import { getTenantLeaseWithSpace, getTenantPayments } from "@/lib/data";
 import { currentPeriod, daysUntil, formatDate, formatMoney, formatPeriod } from "@/lib/format";
-import { StatusBadge } from "@/components/status-badge";
-import { PaymentForm } from "@/app/portal/payment-form";
-import { ContractAttachmentsView } from "@/components/contract-attachments-view";
+import type { Metadata } from "next";
+import { connection } from "next/server";
 
 export const metadata: Metadata = {
   title: "Mi Portal",
@@ -128,7 +128,7 @@ export default async function TenantPortalPage() {
 
         <dl className="relative mt-6 grid grid-cols-2 gap-4 border-t border-white/15 pt-5 sm:grid-cols-4">
           <div>
-            <dt className="text-[11px] font-semibold tracking-wider text-crema/75 uppercase">Canon Mensual</dt>
+            <dt className="text-[11px] font-semibold tracking-wider text-crema/75 uppercase">Cuota Mensual</dt>
             <dd className="mt-1 font-display text-xl font-bold tabular-nums text-maiz sm:text-2xl">
               {formatMoney(lease.monthly_rent)}
             </dd>

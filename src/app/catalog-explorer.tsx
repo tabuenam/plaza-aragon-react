@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { SpaceGallery } from "@/app/space-gallery";
 import { StatusBadge } from "@/components/status-badge";
 import { formatMoney } from "@/lib/format";
 import type { Space, SpaceStatus } from "@/lib/types";
+import { useState } from "react";
 
 type FilterOption = "all" | "open" | "occupied";
 
@@ -200,11 +200,10 @@ export function PlazaInteractiveSection({
                         key={space.id}
                         type="button"
                         onClick={() => handleSelectFromSchematic(space)}
-                        className={`group flex w-full items-center justify-between gap-3 rounded-2xl border p-3 text-left transition duration-150 cursor-pointer ${
-                          isSelected
+                        className={`group flex w-full items-center justify-between gap-3 rounded-2xl border p-3 text-left transition duration-150 cursor-pointer ${isSelected
                             ? "border-maiz bg-white/20 ring-2 ring-maiz/50"
                             : "border-white/15 bg-azul-oscuro/55 hover:border-white/35 hover:bg-white/15"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-white/10 font-mono text-xs font-bold text-maiz ring-1 ring-white/15 group-hover:bg-maiz group-hover:text-azul-oscuro transition">
@@ -283,11 +282,10 @@ export function PlazaInteractiveSection({
               role="tab"
               aria-selected={filter === "all"}
               onClick={() => setFilter("all")}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
-                filter === "all"
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${filter === "all"
                   ? "bg-azul text-white shadow-2xs"
                   : "text-piedra hover:bg-arena hover:text-tinta"
-              }`}
+                }`}
             >
               Todos ({spaces.length})
             </button>
@@ -296,11 +294,10 @@ export function PlazaInteractiveSection({
               role="tab"
               aria-selected={filter === "open"}
               onClick={() => setFilter("open")}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
-                filter === "open"
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${filter === "open"
                   ? "bg-azul text-white shadow-2xs"
                   : "text-piedra hover:bg-arena hover:text-tinta"
-              }`}
+                }`}
             >
               Disponibles / Preventa ({openCount})
             </button>
@@ -309,11 +306,10 @@ export function PlazaInteractiveSection({
               role="tab"
               aria-selected={filter === "occupied"}
               onClick={() => setFilter("occupied")}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
-                filter === "occupied"
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition cursor-pointer ${filter === "occupied"
                   ? "bg-azul text-white shadow-2xs"
                   : "text-piedra hover:bg-arena hover:text-tinta"
-              }`}
+                }`}
             >
               Ocupados ({occupiedCount})
             </button>
@@ -337,11 +333,10 @@ export function PlazaInteractiveSection({
                 id={`local-card-${space.id}`}
                 key={space.id}
                 onClick={() => setHighlightedId(space.id)}
-                className={`card group flex flex-col justify-between transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                  isHighlighted
+                className={`card group flex flex-col justify-between transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${isHighlighted
                     ? "ring-2 ring-barro shadow-md bg-gradient-to-b from-white to-barro-claro/15"
                     : ""
-                }`}
+                  }`}
               >
                 <div>
                   <SpaceGallery
@@ -385,7 +380,7 @@ export function PlazaInteractiveSection({
                   <div className="flex items-baseline justify-between">
                     <div>
                       <span className="block text-[11px] font-semibold uppercase tracking-wider text-piedra">
-                        Canon mensual
+                        Cuota mensual
                       </span>
                       <span className="text-xs text-piedra">Contrato 3 a 12 meses</span>
                     </div>
