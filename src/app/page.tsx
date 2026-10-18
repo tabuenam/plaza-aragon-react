@@ -31,7 +31,7 @@ const fallbackSpaces: Space[] = [
     id: "3",
     name: "Local 3",
     description:
-      "Local comercial de nueva construcción con piso de porcelanato, baño privado y preparación para aire acondicionado.",
+      "Local comercial de nueva construcción con piso de porcelanato, baño privado y aire acondicionado instalado.",
     price: 8500,
     status: "construction",
     image_urls: [],
@@ -66,7 +66,7 @@ const FAQS = [
   },
   {
     q: "¿Qué servicios incluye cada local comercial?",
-    a: "Cada módulo cuenta con baño privado interno, instalaciones eléctricas independientes (medidor propio), acabados en porcelanato, vitrina frontal hacia la vía pública y preparación para unidad de aire acondicionado.",
+    a: "Cada módulo cuenta con baño privado interno, instalaciones eléctricas independientes (medidor propio), acabados en porcelanato, vitrina frontal hacia la vía pública y aire acondicionado instalado.",
   },
   {
     q: "¿Cómo funciona el apartado en preventa de los locales en construcción?",

@@ -73,15 +73,13 @@ export function PlazaInteractiveSection({
           >
             {/* 1. Renting Price */}
             <div className="flex items-start gap-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-xs sm:p-5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-maiz text-azul-oscuro shadow-xs">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2.2"
-                    d="M10 8v8h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+              <div
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-maiz text-azul-oscuro shadow-xs"
+                aria-hidden="true"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full border-[2.2px] border-current font-display text-sm font-black leading-none">
+                  L
+                </span>
               </div>
               <div>
                 <dt className="text-xs font-bold uppercase tracking-wider text-maiz">
@@ -148,7 +146,7 @@ export function PlazaInteractiveSection({
                   Olanchito, Yoro
                 </dd>
                 <p className="mt-0.5 text-xs text-crema/80">
-                  Planta baja · Frente a calle principal
+                  Planta baja · Centro de la Ciudad
                 </p>
               </div>
             </div>
@@ -200,11 +198,10 @@ export function PlazaInteractiveSection({
               role="tab"
               aria-selected={filter === "all"}
               onClick={() => setFilter("all")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                filter === "all"
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${filter === "all"
                   ? "bg-azul text-white"
                   : "text-piedra hover:bg-arena hover:text-tinta"
-              }`}
+                }`}
             >
               Todos ({spaces.length})
             </button>
@@ -213,11 +210,10 @@ export function PlazaInteractiveSection({
               role="tab"
               aria-selected={filter === "open"}
               onClick={() => setFilter("open")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                filter === "open"
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${filter === "open"
                   ? "bg-azul text-white"
                   : "text-piedra hover:bg-arena hover:text-tinta"
-              }`}
+                }`}
             >
               Disponibles / Preventa ({openCount})
             </button>
@@ -226,11 +222,10 @@ export function PlazaInteractiveSection({
               role="tab"
               aria-selected={filter === "occupied"}
               onClick={() => setFilter("occupied")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                filter === "occupied"
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${filter === "occupied"
                   ? "bg-azul text-white"
                   : "text-piedra hover:bg-arena hover:text-tinta"
-              }`}
+                }`}
             >
               Ocupados ({occupiedCount})
             </button>
@@ -254,9 +249,8 @@ export function PlazaInteractiveSection({
                 id={`local-card-${space.id}`}
                 key={space.id}
                 onClick={() => setHighlightedId(space.id)}
-                className={`card flex flex-col justify-between transition duration-200 hover:shadow-md ${
-                  isHighlighted ? "ring-2 ring-barro shadow-md" : ""
-                }`}
+                className={`card flex flex-col justify-between transition duration-200 hover:shadow-md ${isHighlighted ? "ring-2 ring-barro shadow-md" : ""
+                  }`}
               >
                 <div>
                   <SpaceGallery
