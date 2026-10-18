@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { updateSpaceAction } from "@/app/admin/actions";
+import { useAdminToast } from "@/app/admin/admin-toast";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { compressImage } from "@/lib/compress-image";
@@ -11,8 +12,8 @@ import type { FormState, Space } from "@/lib/types";
 const initialState: FormState = { ok: true, message: "" };
 
 export function EditSpaceModal({ space }: { space: Space }) {
+  const { notify } = useAdminToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [state, formAction] = useActionState(updateSpaceAction, initialState);
   const [existingImages, setExistingImages] = useState<string[]>(space.image_urls || []);
   const [newImageFiles, setNewImageFiles] = useState<{ file: File; preview: string }[]>([]);
   const [isCompressing, setIsCompressing] = useState(false);
@@ -20,6 +21,22 @@ export function EditSpaceModal({ space }: { space: Space }) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  const [state, formAction] = useActionState(
+    async (prev: FormState, formData: FormData) => {
+      const result = await updateSpaceAction(prev, formData);
+      if (result.message) {
+        notify(result.message, result.ok ? "success" : "error");
+      }
+      if (result.ok) {
+        newImageFiles.forEach((item) => URL.revokeObjectURL(item.preview));
+        setNewImageFiles([]);
+        setIsOpen(false);
+      }
+      return result;
+    },
+    initialState
+  );
 
   function handleOpen() {
     setExistingImages(space.image_urls || []);
@@ -84,9 +101,9 @@ export function EditSpaceModal({ space }: { space: Space }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-crema bg-white px-3 py-1.5 text-xs font-semibold text-azul transition hover:bg-crema/40 active:scale-95"
+        className="inline-flex min-h-8 items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-piedra transition hover:bg-crema/50 hover:text-azul active:scale-95"
       >
-        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

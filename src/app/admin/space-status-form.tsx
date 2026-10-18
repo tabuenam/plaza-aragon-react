@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateSpaceStatusAction } from "@/app/admin/actions";
+import { useAdminToast } from "@/app/admin/admin-toast";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState, Space } from "@/lib/types";
@@ -9,10 +10,34 @@ import type { FormState, Space } from "@/lib/types";
 const initialState: FormState = { ok: true, message: "" };
 
 export function SpaceStatusForm({ space }: { space: Space }) {
-  const [state, formAction] = useActionState(updateSpaceStatusAction, initialState);
+  const { notify } = useAdminToast();
+  const [justSaved, setJustSaved] = useState(false);
+
+  const [state, formAction] = useActionState(
+    async (prev: FormState, formData: FormData) => {
+      const result = await updateSpaceStatusAction(prev, formData);
+      if (result.message) {
+        notify(
+          `${space.name}: ${result.message}`,
+          result.ok ? "success" : "error"
+        );
+      }
+      if (result.ok) {
+        setJustSaved(true);
+        window.setTimeout(() => setJustSaved(false), 2600);
+      }
+      return result;
+    },
+    initialState
+  );
 
   return (
-    <form action={formAction} className="mt-3 space-y-3 border-t border-crema/60 pt-3">
+    <form
+      action={formAction}
+      className={`mt-3 space-y-3 rounded-xl border-t border-crema/60 pt-3 transition-all ${
+        justSaved ? "bg-selva-claro/35 px-2.5 pb-2.5 ring-2 ring-selva/40" : ""
+      }`}
+    >
       <input type="hidden" name="space_id" value={space.id} />
 
       <div className="grid grid-cols-2 gap-2">
@@ -50,8 +75,15 @@ export function SpaceStatusForm({ space }: { space: Space }) {
 
       <FormMessage state={state} />
 
-      <SubmitButton pendingText="Actualizando…" className="btn-primary min-h-9 w-full text-xs py-1.5">
-        Actualizar local
+      <SubmitButton
+        pendingText="Actualizando…"
+        className={`min-h-9 w-full rounded-xl px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition active:scale-[0.98] disabled:opacity-60 ${
+          justSaved
+            ? "bg-selva hover:bg-selva/90"
+            : "bg-azul hover:bg-azul-oscuro"
+        }`}
+      >
+        {justSaved ? "✓ ¡Guardado!" : "Actualizar local"}
       </SubmitButton>
     </form>
   );

@@ -108,7 +108,7 @@ export default async function AdminOverviewPage() {
           </div>
           <Link
             href="/admin/contratos"
-            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-azul px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-azul-oscuro active:scale-95"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-azul/20 bg-azul/10 px-4 py-2 text-xs font-semibold text-azul transition hover:bg-azul/20 active:scale-95"
           >
             Gestionar Contratos →
           </Link>

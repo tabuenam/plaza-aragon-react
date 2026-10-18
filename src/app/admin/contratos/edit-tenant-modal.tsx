@@ -3,6 +3,7 @@
 import { useActionState, useId, useState } from "react";
 import { updateTenantAction } from "@/app/admin/actions";
 import { AdminDialog } from "@/app/admin/admin-dialog";
+import { useAdminToast } from "@/app/admin/admin-toast";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import type { AdminTenant, FormState } from "@/lib/types";
@@ -48,9 +49,13 @@ function EditTenantForm({
   titleId: string;
   onDone: () => void;
 }) {
+  const { notify } = useAdminToast();
   const fieldId = useId();
   const [state, formAction] = useActionState(async (prev: FormState, formData: FormData) => {
     const result = await updateTenantAction(prev, formData);
+    if (result.message) {
+      notify(result.message, result.ok ? "success" : "error");
+    }
     if (result.ok) onDone();
     return result;
   }, initialState);

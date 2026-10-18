@@ -2,14 +2,28 @@
 
 import { useActionState, useState } from "react";
 import { terminateLeaseAction } from "@/app/admin/actions";
+import { useAdminToast } from "@/app/admin/admin-toast";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState } from "@/lib/types";
 
 const initialState: FormState = { ok: true, message: "" };
 
 export function TerminateLeaseButton({ leaseId, spaceName }: { leaseId: string; spaceName: string }) {
+  const { notify } = useAdminToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [state, formAction] = useActionState(terminateLeaseAction, initialState);
+  const [state, formAction] = useActionState(
+    async (prev: FormState, formData: FormData) => {
+      const result = await terminateLeaseAction(prev, formData);
+      if (result.message) {
+        notify(result.message, result.ok ? "success" : "error");
+      }
+      if (result.ok) {
+        setIsOpen(false);
+      }
+      return result;
+    },
+    initialState
+  );
 
   function handleClose() {
     setIsOpen(false);

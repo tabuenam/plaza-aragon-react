@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { updateLeaseAction } from "@/app/admin/actions";
+import { useAdminToast } from "@/app/admin/admin-toast";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { compressImage } from "@/lib/compress-image";
@@ -31,8 +32,8 @@ export function EditLeaseModal({
   tenants: Tenant[];
   activeSpaceIds?: string[];
 }) {
+  const { notify } = useAdminToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [state, formAction] = useActionState(updateLeaseAction, initialState);
 
   const [spaceId, setSpaceId] = useState(lease.space_id);
   const [tenantId, setTenantId] = useState(lease.tenant_id);
@@ -52,18 +53,23 @@ export function EditLeaseModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (state.ok && state.message) {
-      const timer = setTimeout(() => {
+  const [state, formAction] = useActionState(
+    async (prev: FormState, formData: FormData) => {
+      const result = await updateLeaseAction(prev, formData);
+      if (result.message) {
+        notify(result.message, result.ok ? "success" : "error");
+      }
+      if (result.ok) {
         newFiles.forEach((f) => {
           if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
         });
         setNewFiles([]);
         setIsOpen(false);
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [state, newFiles]);
+      }
+      return result;
+    },
+    initialState
+  );
 
   function handleOpen() {
     setSpaceId(lease.space_id);

@@ -1,16 +1,24 @@
 import type { FormState } from "@/lib/types";
 
 export function FormMessage({ state }: { state: FormState }) {
+  if (!state.message) {
+    return <p aria-live="polite" className="sr-only" />;
+  }
+
   return (
-    <p
+    <div
+      role="status"
       aria-live="polite"
-      className={
-        state.message
-          ? `rounded-xl px-4 py-3 text-sm font-medium ${state.ok ? "bg-selva-claro text-selva" : "bg-barro-claro text-barro"}`
-          : "sr-only"
-      }
+      className={`flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-xs font-semibold ${
+        state.ok
+          ? "border border-selva/20 bg-selva-claro text-selva"
+          : "border border-barro/20 bg-barro-claro text-barro"
+      }`}
     >
-      {state.message}
-    </p>
+      <span aria-hidden="true" className="mt-0.5 shrink-0 font-bold">
+        {state.ok ? "✓" : "!"}
+      </span>
+      <span>{state.message}</span>
+    </div>
   );
 }

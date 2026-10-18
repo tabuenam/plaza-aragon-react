@@ -3,14 +3,33 @@
 import { useState } from "react";
 import Image from "next/image";
 import { verifyPaymentAction, rejectPaymentAction } from "@/app/admin/actions";
+import { useAdminToast } from "@/app/admin/admin-toast";
 import { StatusBadge } from "@/components/status-badge";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDate, formatMoney, formatPeriod } from "@/lib/format";
 import type { AdminPayment } from "@/lib/data";
 
 export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
+  const { notify } = useAdminToast();
   const [isRejecting, setIsRejecting] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
+
+  async function handleVerify(formData: FormData) {
+    await verifyPaymentAction(formData);
+    notify(
+      `Pago de ${payment.lease?.space?.name || "local"} marcado como verificado.`,
+      "success"
+    );
+  }
+
+  async function handleReject(formData: FormData) {
+    await rejectPaymentAction(formData);
+    setIsRejecting(false);
+    notify(
+      `Comprobante de ${payment.lease?.space?.name || "local"} rechazado.`,
+      "error"
+    );
+  }
 
   return (
     <div className="card border border-crema space-y-4">
@@ -89,7 +108,7 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
       {payment.status === "pending" && (
         <div className="border-t border-crema/80 pt-3">
           {isRejecting ? (
-            <form action={rejectPaymentAction} className="space-y-3">
+            <form action={handleReject} className="space-y-3">
               <input type="hidden" name="payment_id" value={payment.id} />
               <div>
                 <label htmlFor={`reject-reason-${payment.id}`} className="label text-xs">
@@ -119,7 +138,7 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
             </form>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              <form action={verifyPaymentAction}>
+              <form action={handleVerify}>
                 <input type="hidden" name="payment_id" value={payment.id} />
                 <SubmitButton pendingText="Verificando…" className="btn-primary min-h-10 text-xs">
                   ✓ Marcar como Verificado

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { createLeaseAction } from "@/app/admin/actions";
+import { useAdminToast } from "@/app/admin/admin-toast";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { compressImage } from "@/lib/compress-image";
@@ -40,8 +41,8 @@ export function CreateLeaseModal({
   activeSpaceIds?: string[];
   initialSpaceId?: string;
 }) {
+  const { notify } = useAdminToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [state, formAction] = useActionState(createLeaseAction, initialState);
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -60,18 +61,23 @@ export function CreateLeaseModal({
   const [startDate, setStartDate] = useState(todayInHonduras());
   const [endDate, setEndDate] = useState(defaultEndDate(todayInHonduras()));
 
-  useEffect(() => {
-    if (state.ok && state.message) {
-      const timer = setTimeout(() => {
+  const [state, formAction] = useActionState(
+    async (prev: FormState, formData: FormData) => {
+      const result = await createLeaseAction(prev, formData);
+      if (result.message) {
+        notify(result.message, result.ok ? "success" : "error");
+      }
+      if (result.ok) {
         stagedFiles.forEach((f) => {
           if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
         });
         setStagedFiles([]);
         setIsOpen(false);
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [state, stagedFiles]);
+      }
+      return result;
+    },
+    initialState
+  );
 
   function handleOpen() {
     const candidate = initialSpaceId

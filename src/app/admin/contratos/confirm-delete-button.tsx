@@ -2,6 +2,7 @@
 
 import { useActionState, useId, useState, type ReactNode } from "react";
 import { AdminDialog } from "@/app/admin/admin-dialog";
+import { useAdminToast } from "@/app/admin/admin-toast";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState } from "@/lib/types";
 
@@ -91,8 +92,12 @@ function ConfirmDeleteBody({
   blockedReason?: string;
   onDone: () => void;
 }) {
+  const { notify } = useAdminToast();
   const [state, formAction] = useActionState(async (prev: FormState, formData: FormData) => {
     const result = await action(prev, formData);
+    if (result.message) {
+      notify(result.message, result.ok ? "success" : "error");
+    }
     if (result.ok) onDone();
     return result;
   }, initialState);
