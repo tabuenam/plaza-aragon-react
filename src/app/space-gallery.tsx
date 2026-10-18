@@ -21,58 +21,41 @@ export function SpaceGallery({
 
   if (!images || images.length === 0) {
     return (
-      <div className="group relative flex aspect-16/10 w-full flex-col justify-between overflow-hidden rounded-2xl border border-crema/90 bg-arena blueprint-grid p-4">
-        <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-2.5 py-1 text-[11px] font-bold tracking-wider text-azul uppercase shadow-2xs ring-1 ring-crema">
-            Módulo {unitLabel}
-          </span>
-          <span className="font-mono text-[10px] font-semibold tracking-widest text-piedra/80 uppercase">
-            PLANTA BAJA · OLANCHITO
-          </span>
-        </div>
+      <div className="group relative flex aspect-16/9 w-full items-center justify-center overflow-hidden rounded-2xl border border-crema/80 bg-arena/70 blueprint-grid p-4">
+        <span className="absolute top-3 left-3 rounded-md bg-white/90 px-2 py-0.5 font-mono text-[10px] font-semibold text-piedra ring-1 ring-crema/80">
+          Módulo {unitLabel}
+        </span>
 
-        {/* Architectural elevation SVG */}
-        <div className="my-auto flex items-center justify-center py-2">
-          <svg
-            viewBox="0 0 220 90"
-            className="h-20 w-auto text-azul/85 transition-transform duration-300 group-hover:scale-[1.03]"
-            aria-hidden="true"
-          >
-            {/* Roof cornice */}
-            <rect x="16" y="10" width="188" height="6" rx="2" fill="currentColor" opacity="0.85" />
-            <rect x="22" y="16" width="176" height="64" fill="#ffffff" stroke="currentColor" strokeWidth="2" />
-            {/* Archway / storefront vitrina */}
-            <rect
-              x="34"
-              y="28"
-              width="98"
-              height="52"
-              rx="3"
-              fill={status === "construction" ? "#fdf0cf" : "#daf0f5"}
-              stroke="currentColor"
-              strokeWidth="1.75"
-            />
-            {/* Glass reflection lines */}
-            <line x1="50" y1="34" x2="40" y2="56" stroke="#1693ad" strokeWidth="1.5" opacity="0.5" />
-            <line x1="58" y1="34" x2="46" y2="62" stroke="#1693ad" strokeWidth="1.5" opacity="0.35" />
-            <line x1="83" y1="28" x2="83" y2="80" stroke="currentColor" strokeWidth="1.25" opacity="0.4" />
-            {/* Entrance door */}
-            <path
-              d="M144 80V40a18 18 0 0 1 36 0v40z"
-              fill="#f9e3d8"
-              stroke="#b84a24"
-              strokeWidth="1.75"
-            />
-            <circle cx="151" cy="60" r="2" fill="#b84a24" />
-            {/* Ground line */}
-            <line x1="6" y1="80" x2="214" y2="80" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-crema/70 pt-2 text-[11px] font-medium text-piedra">
-          <span>Vista arquitectónica referencial</span>
-          <span className="font-semibold text-azul">{name}</span>
-        </div>
+        {/* Clean architectural elevation SVG */}
+        <svg
+          viewBox="0 0 220 90"
+          className="h-20 w-auto text-azul/80 transition-transform duration-300 group-hover:scale-[1.03]"
+          aria-hidden="true"
+        >
+          <rect x="16" y="10" width="188" height="6" rx="2" fill="currentColor" opacity="0.85" />
+          <rect x="22" y="16" width="176" height="64" fill="#ffffff" stroke="currentColor" strokeWidth="2" />
+          <rect
+            x="34"
+            y="28"
+            width="98"
+            height="52"
+            rx="3"
+            fill={status === "construction" ? "#fdf0cf" : "#daf0f5"}
+            stroke="currentColor"
+            strokeWidth="1.75"
+          />
+          <line x1="50" y1="34" x2="40" y2="56" stroke="#1693ad" strokeWidth="1.5" opacity="0.5" />
+          <line x1="58" y1="34" x2="46" y2="62" stroke="#1693ad" strokeWidth="1.5" opacity="0.35" />
+          <line x1="83" y1="28" x2="83" y2="80" stroke="currentColor" strokeWidth="1.25" opacity="0.4" />
+          <path
+            d="M144 80V40a18 18 0 0 1 36 0v40z"
+            fill="#f9e3d8"
+            stroke="#b84a24"
+            strokeWidth="1.75"
+          />
+          <circle cx="151" cy="60" r="2" fill="#b84a24" />
+          <line x1="6" y1="80" x2="214" y2="80" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
       </div>
     );
   }
