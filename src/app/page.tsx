@@ -2,6 +2,7 @@ import { PlazaInteractiveSection } from "@/app/catalog-explorer";
 import { Logo } from "@/components/logo";
 import { TechneticaCredit } from "@/components/technetica-credit";
 import { getPublicSpaces } from "@/lib/data";
+import { computeCatalogStats } from "@/lib/catalog";
 import type { Space } from "@/lib/types";
 import Link from "next/link";
 
@@ -83,14 +84,126 @@ const FAQS = [
   },
 ];
 
+function buildStructuredData(
+  spaces: Space[],
+  stats: ReturnType<typeof computeCatalogStats>,
+  baseUrl: string,
+  whatsapp: string
+) {
+  const rawDigits = whatsapp.replace(/\D/g, "");
+  const cleanPhone = rawDigits.length >= 8 ? rawDigits : "50499999999";
+  const formattedPhone = cleanPhone.startsWith("504") ? `+${cleanPhone}` : `+504${cleanPhone}`;
+  const priceDisplay =
+    stats.minPrice > 0 && stats.maxPrice > 0
+      ? `L. ${stats.minPrice.toLocaleString("es-HN")} - L. ${stats.maxPrice.toLocaleString("es-HN")} HNL`
+      : "L. 8,000 - L. 9,000 HNL";
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ShoppingCenter",
+        "@id": `${baseUrl}/#place`,
+        name: "Plaza Aragón",
+        alternateName: "Plaza Comercial Aragón",
+        description:
+          "Locales comerciales en renta en Olanchito, Yoro, Honduras. Módulos con baño privado, medidor independiente y contratos flexibles de 6 a 12+ meses.",
+        url: baseUrl,
+        telephone: formattedPhone,
+        image: `${baseUrl}/opengraph-image`,
+        logo: `${baseUrl}/icon.svg`,
+        priceRange: priceDisplay,
+        currenciesAccepted: "HNL",
+        paymentAccepted: "Transferencia bancaria, depósito",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Calle Principal",
+          addressLocality: "Olanchito",
+          addressRegion: "Yoro",
+          addressCountry: "HN",
+        },
+        geo: {
+          "@type": "GeoCoordinates",
+          latitude: 15.4811,
+          longitude: -86.5742,
+        },
+        openingHoursSpecification: [
+          {
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            opens: "08:00",
+            closes: "18:00",
+          },
+        ],
+        amenityFeature: [
+          { "@type": "LocationFeatureSpecification", name: "Baño privado interno", value: true },
+          { "@type": "LocationFeatureSpecification", name: "Medidor eléctrico independiente", value: true },
+          { "@type": "LocationFeatureSpecification", name: "Aire acondicionado instalado", value: true },
+          { "@type": "LocationFeatureSpecification", name: "Piso de porcelanato", value: true },
+          { "@type": "LocationFeatureSpecification", name: "Vitrina comercial frontal", value: true },
+        ],
+        hasOfferCatalog: {
+          "@type": "OfferCatalog",
+          name: "Catálogo de Locales Comerciales",
+          itemListElement: spaces.map((space) => ({
+            "@type": "Offer",
+            name: space.name,
+            description: space.description,
+            price: space.price,
+            priceCurrency: "HNL",
+            availability:
+              space.status === "available"
+                ? "https://schema.org/InStock"
+                : space.status === "construction"
+                  ? "https://schema.org/PreOrder"
+                  : "https://schema.org/SoldOut",
+            url: `${baseUrl}/#locales`,
+          })),
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${baseUrl}/#website`,
+        name: "Plaza Aragón",
+        url: baseUrl,
+        inLanguage: "es-HN",
+        publisher: {
+          "@id": `${baseUrl}/#place`,
+        },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${baseUrl}/#faq`,
+        mainEntity: FAQS.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+    ],
+  };
+}
+
 export default async function HomePage() {
   "use cache";
   const fetchedSpaces = await getPublicSpaces();
   const spaces = fetchedSpaces.length > 0 ? fetchedSpaces : fallbackSpaces;
+  const stats = computeCatalogStats(spaces);
   const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "50499999999";
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://plaza-aragon.com").trim().replace(/\/+$/, "");
+  const structuredData = buildStructuredData(spaces, stats, baseUrl, whatsapp);
 
   return (
     <div className="flex min-h-dvh flex-col bg-arena selection:bg-turquesa-claro selection:text-azul">
+      {/* Schema.org Structured Data (JSON-LD) for Rich Snippets & LLM Search */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
       {/* ───────────── STICKY HEADER (CLEAN & QUIET) ───────────── */}
       <header className="sticky top-0 z-30 border-b border-crema/90 bg-arena/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
@@ -129,6 +242,9 @@ export default async function HomePage() {
             <h2 className="font-display text-2xl font-bold text-azul sm:text-3xl">
               Por qué elegir Plaza Aragón
             </h2>
+            <p className="mt-2.5 max-w-3xl text-sm leading-relaxed text-piedra sm:text-base">
+              Plaza Aragón ofrece locales comerciales de alto estándar en el centro de Olanchito, Yoro, con contratos desde 6 hasta 12+ meses, cánones competitivos desde L. 8,000 mensuales, baño privado, medidor individual y portal digital para registrar comprobantes bancarios al instante.
+            </p>
 
             <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
               <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5 transition duration-200 hover:border-azul/30 hover:bg-arena/70 hover:shadow-xs">

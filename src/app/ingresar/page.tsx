@@ -4,15 +4,83 @@ import { TechneticaCredit } from "@/components/technetica-credit";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://plaza-aragon.com").trim().replace(/\/+$/, "");
+
 export const metadata: Metadata = {
-  title: "Ingresar al Portal",
-  description: "Acceso para inquilinos y administración de Plaza Aragón en Olanchito.",
+  title: "Portal de Inquilinos · Iniciar Sesión",
+  description:
+    "Portal digital de Plaza Aragón en Olanchito, Yoro. Acceso para inquilinos para registrar transferencias de renta y consultar contratos.",
+  alternates: {
+    canonical: "/ingresar",
+  },
+  openGraph: {
+    title: "Portal de Inquilinos · Iniciar Sesión · Plaza Aragón",
+    description:
+      "Portal digital de Plaza Aragón en Olanchito, Yoro. Acceso para inquilinos para registrar transferencias de renta y consultar contratos.",
+    url: `${siteUrl}/ingresar`,
+    siteName: "Plaza Aragón",
+    locale: "es_HN",
+    type: "website",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Plaza Aragón · Portal de Inquilinos",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Portal de Inquilinos · Iniciar Sesión · Plaza Aragón",
+    description:
+      "Portal digital de Plaza Aragón en Olanchito, Yoro. Acceso para inquilinos para registrar transferencias de renta y consultar contratos.",
+    images: ["/opengraph-image"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+const ingresarSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": `${siteUrl}/ingresar#webpage`,
+  url: `${siteUrl}/ingresar`,
+  name: "Portal de Inquilinos · Plaza Aragón",
+  description:
+    "Portal digital de Plaza Aragón en Olanchito, Yoro. Acceso para inquilinos para registrar transferencias de renta y consultar contratos.",
+  isPartOf: {
+    "@id": `${siteUrl}/#website`,
+  },
+  breadcrumb: {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Portal de Inquilinos",
+        item: `${siteUrl}/ingresar`,
+      },
+    ],
+  },
 };
 
 export default async function IngresarPage() {
   "use cache";
   return (
     <div className="flex min-h-dvh flex-col bg-arena">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ingresarSchema) }}
+      />
       <div className="lenca-band h-2 w-full" />
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-4 py-10 sm:px-6 lg:px-8">

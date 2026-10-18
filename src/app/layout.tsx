@@ -14,14 +14,69 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://plaza-aragon.com").trim().replace(/\/+$/, "");
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://plaza-aragon.com"),
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "Plaza Aragón · Locales comerciales en Olanchito",
+    default: "Plaza Aragón · Locales comerciales en renta en Olanchito",
     template: "%s · Plaza Aragón",
   },
   description:
-    "Locales comerciales en renta en Olanchito, Yoro, Honduras. Contratos de 6 a 12+ meses en Plaza Aragón.",
+    "Renta de locales comerciales en Olanchito, Yoro. Ubicación céntrica de alta plusvalía, baño privado, medidor propio y contratos flexibles en Plaza Aragón.",
+  keywords: [
+    "locales comerciales Olanchito",
+    "renta de locales Olanchito",
+    "locales en alquiler Yoro",
+    "plaza comercial Olanchito",
+    "Plaza Aragón",
+    "alquiler comercial Honduras",
+  ],
+  authors: [{ name: "Plaza Aragón" }],
+  creator: "Plaza Aragón",
+  publisher: "Plaza Aragón",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Plaza Aragón · Locales comerciales en renta en Olanchito",
+    description:
+      "Renta de locales comerciales en Olanchito, Yoro. Ubicación céntrica de alta plusvalía, baño privado, medidor propio y contratos flexibles en Plaza Aragón.",
+    url: siteUrl,
+    siteName: "Plaza Aragón",
+    locale: "es_HN",
+    type: "website",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Plaza Aragón · Locales comerciales en renta en Olanchito, Yoro",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Plaza Aragón · Locales comerciales en renta en Olanchito",
+    description:
+      "Renta de locales comerciales en Olanchito, Yoro. Ubicación céntrica de alta plusvalía, baño privado, medidor propio y contratos flexibles en Plaza Aragón.",
+    images: ["/opengraph-image"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    "max-image-preview": "large",
+    "max-snippet": -1,
+    "max-video-preview": -1,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  category: "real estate",
 };
 
 export const viewport: Viewport = {

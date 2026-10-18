@@ -1,0 +1,18 @@
+# Plaza Aragón
+
+> Plaza Aragón es un centro de locales comerciales modernos en renta ubicado en Olanchito, Yoro, Honduras. Diseñado para clínicas, bufetes profesionales, farmacias y comercios con contratos flexibles de 6 a 12+ meses y portal digital de gestión de pagos.
+
+## Catálogo y Servicios
+
+- [Catálogo de Locales Comerciales](https://plaza-aragon.com/): Disponibilidad en tiempo real, planos arquitectónicos y precios mensuales en Lempiras (HNL).
+- [Especificaciones y Servicios](https://plaza-aragon.com/#ventajas): Baño privado interno, medidor eléctrico independiente, vitrina comercial hacia la calle principal y aire acondicionado instalado.
+- [Preguntas Frecuentes de Arrendamiento](https://plaza-aragon.com/#preguntas): Plazos de contrato (6 a 12+ meses renovables), condiciones de preventa y depósito de garantía equivalente a 1 mes de renta.
+
+## Portales y Contacto
+
+- [Portal de Inquilinos](https://plaza-aragon.com/ingresar): Plataforma digital para que arrendatarios suban comprobantes de pago de renta y revisen contratos vigentes.
+- [Contacto por WhatsApp](https://wa.me/50499999999): Atención directa para citas, visitas y reservación de módulos comerciales.
+
+## Contexto Completo
+
+- [Documentación Consolidada para LLMs](https://plaza-aragon.com/llms-full.txt): Especificaciones técnicas completas, medidas, tarifas y políticas para ingesta en un solo paso por modelos de lenguaje y agentes de IA.

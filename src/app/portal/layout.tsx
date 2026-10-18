@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { requireTenant } from "@/lib/auth";
@@ -6,6 +7,13 @@ import { Logo } from "@/components/logo";
 import { TechneticaCredit } from "@/components/technetica-credit";
 
 export const instant = false;
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function TenantPortalLayout({ children }: { children: ReactNode }) {
   const user = await requireTenant();
