@@ -14,7 +14,7 @@ export function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} data-testid="sign-in-form" className="space-y-5">
       <div>
         <label htmlFor="email" className="label">
           Correo electrónico
@@ -30,6 +30,7 @@ export function SignInForm() {
           autoCapitalize="off"
           spellCheck="false"
           placeholder="inquilino@plaza-aragon.com"
+          data-testid="signin-email"
           className="field"
         />
       </div>
@@ -42,6 +43,7 @@ export function SignInForm() {
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
+            data-testid="signin-toggle-password"
             className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-semibold text-azul transition hover:bg-arena cursor-pointer"
             aria-pressed={showPassword}
           >
@@ -57,6 +59,7 @@ export function SignInForm() {
             autoComplete="current-password"
             placeholder="••••••••"
             enterKeyHint="done"
+            data-testid="signin-password"
             className="field"
           />
         </div>

@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { createLeaseAction } from "@/app/admin/actions";
+import { AdminDialog } from "@/app/admin/admin-dialog";
 import { useAdminToast } from "@/app/admin/admin-toast";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -179,47 +180,36 @@ export function CreateLeaseModal({
       <button
         type="button"
         onClick={handleOpen}
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-azul px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-azul-oscuro active:scale-95"
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-azul px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-azul-oscuro active:scale-95 cursor-pointer"
       >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
         </svg>
         Nuevo contrato
       </button>
 
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="create-lease-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
-        >
-          <div
-            className="fixed inset-0 bg-tinta/60 backdrop-blur-xs transition-opacity"
-            onClick={handleClose}
-          />
-
-          <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-crema">
-            <header className="flex items-center justify-between border-b border-crema px-5 py-4 sm:px-6">
-              <div>
-                <h3 id="create-lease-title" className="font-display text-lg font-bold text-azul sm:text-xl">
-                  Registrar Contrato de Arrendamiento
-                </h3>
-                <p className="text-xs text-piedra">
-                  Asigne un local comercial a un inquilino con vigencia, monto mensual y documentos.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-piedra transition hover:bg-arena hover:text-tinta"
-                aria-label="Cerrar ventana"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </header>
+      <AdminDialog open={isOpen} onClose={handleClose} labelledBy="create-lease-title" className="max-w-xl">
+        <div className="flex max-h-[92vh] w-full flex-col overflow-hidden bg-white">
+          <header className="flex items-center justify-between border-b border-crema px-5 py-4 sm:px-6">
+            <div>
+              <h3 id="create-lease-title" className="font-display text-lg font-bold text-azul sm:text-xl">
+                Registrar Contrato de Arrendamiento
+              </h3>
+              <p className="text-xs text-piedra">
+                Asigne un local comercial a un inquilino con vigencia, monto mensual y documentos.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-piedra transition hover:bg-arena hover:text-tinta cursor-pointer"
+              aria-label="Cerrar ventana"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </header>
 
             <form
               ref={formRef}
@@ -501,9 +491,8 @@ export function CreateLeaseModal({
                 </SubmitButton>
               </footer>
             </form>
-          </div>
         </div>
-      )}
+      </AdminDialog>
     </>
   );
 }

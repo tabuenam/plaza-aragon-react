@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Image from "next/image";
+import { AdminDialog } from "@/app/admin/admin-dialog";
 import type { SpaceStatus } from "@/lib/types";
 
 export function SpaceGallery({
@@ -9,15 +10,33 @@ export function SpaceGallery({
   name,
   unitNumber,
   status,
+  priority = false,
 }: {
   images: string[];
   name: string;
   unitNumber?: number;
   status?: SpaceStatus;
+  priority?: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const titleId = useId();
 
   const unitLabel = unitNumber ? `0${unitNumber}` : name.replace(/\D/g, "").padStart(2, "0") || "PA";
+
+  useEffect(() => {
+    if (activeIndex === null || !images || images.length <= 1) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setActiveIndex((prev) => (prev !== null ? (prev - 1 + images.length) % images.length : 0));
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setActiveIndex((prev) => (prev !== null ? (prev + 1) % images.length : 0));
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeIndex, images]);
 
   if (!images || images.length === 0) {
     return (
@@ -66,13 +85,15 @@ export function SpaceGallery({
         <button
           type="button"
           onClick={() => setActiveIndex(0)}
-          className="group relative block aspect-16/10 w-full overflow-hidden rounded-2xl bg-crema text-left focus:outline-none"
+          className="group relative block aspect-16/10 w-full overflow-hidden rounded-2xl bg-crema text-left focus-visible:ring-3 focus-visible:ring-turquesa"
           aria-label={`Ampliar fotografía de ${name}`}
         >
           <Image
             src={images[0]}
             alt={`Fotografía de ${name}`}
             fill
+            priority={priority}
+            fetchPriority={priority ? "high" : undefined}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover transition duration-300 group-hover:scale-105"
           />
@@ -83,45 +104,50 @@ export function SpaceGallery({
       ) : (
         <div className="relative">
           <div className="no-scrollbar flex w-full snap-x snap-mandatory gap-2.5 overflow-x-auto rounded-2xl pb-1">
-            {images.map((src, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => setActiveIndex(index)}
-                className="group relative aspect-16/10 w-[86%] shrink-0 snap-center overflow-hidden rounded-2xl bg-crema text-left sm:w-[90%]"
-                aria-label={`Ampliar fotografía ${index + 1} de ${name}`}
-              >
-                <Image
-                  src={src}
-                  alt={`Fotografía ${index + 1} de ${name}`}
-                  fill
-                  sizes="(max-width: 768px) 85vw, 400px"
-                  className="object-cover transition duration-300 group-hover:scale-105"
-                />
-                <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-tinta/75 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-xs">
-                  {index + 1} / {images.length} · Ampliar
-                </span>
-              </button>
-            ))}
+            {images.map((src, index) => {
+              const isPrimarySlide = priority && index === 0;
+              const isOffscreenSlide = index > 0;
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setActiveIndex(index)}
+                  className="group relative aspect-16/10 w-[86%] shrink-0 snap-center overflow-hidden rounded-2xl bg-crema text-left sm:w-[90%]"
+                  aria-label={`Ampliar fotografía ${index + 1} de ${name}`}
+                >
+                  <Image
+                    src={src}
+                    alt={`Fotografía ${index + 1} de ${name}`}
+                    fill
+                    priority={isPrimarySlide}
+                    fetchPriority={isPrimarySlide ? "high" : isOffscreenSlide ? "low" : undefined}
+                    loading={isPrimarySlide ? undefined : "lazy"}
+                    sizes="(max-width: 768px) 85vw, 400px"
+                    className="object-cover transition duration-300 group-hover:scale-105"
+                  />
+                  <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-tinta/75 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-xs">
+                    {index + 1} / {images.length} · Ampliar
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {activeIndex !== null && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Galería de ${name}`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-tinta/85 p-3 sm:p-6 backdrop-blur-xs"
-          onClick={() => setActiveIndex(null)}
-        >
-          <div
-            className="relative flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <AdminDialog
+        open={activeIndex !== null}
+        onClose={() => setActiveIndex(null)}
+        labelledBy={titleId}
+        className="max-w-4xl"
+      >
+        {activeIndex !== null && (
+          <div className="flex max-h-[90dvh] w-full flex-col overflow-hidden bg-white">
             <div className="flex items-center justify-between border-b border-crema px-5 py-3.5">
               <div>
-                <h4 className="font-display text-base font-bold text-azul">{name}</h4>
+                <h4 id={titleId} className="font-display text-base font-bold text-azul">
+                  {name}
+                </h4>
                 <p className="text-xs text-piedra">
                   Fotografía {activeIndex + 1} de {images.length}
                 </p>
@@ -129,7 +155,7 @@ export function SpaceGallery({
               <button
                 type="button"
                 onClick={() => setActiveIndex(null)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-arena text-tinta transition hover:bg-crema"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-arena text-tinta transition hover:bg-crema cursor-pointer"
                 aria-label="Cerrar galería"
               >
                 ✕
@@ -150,7 +176,9 @@ export function SpaceGallery({
               <div className="flex items-center justify-between border-t border-crema bg-arena/60 px-5 py-3">
                 <button
                   type="button"
-                  onClick={() => setActiveIndex((prev) => (prev !== null ? (prev - 1 + images.length) % images.length : 0))}
+                  onClick={() =>
+                    setActiveIndex((prev) => (prev !== null ? (prev - 1 + images.length) % images.length : 0))
+                  }
                   className="btn-ghost min-h-9 px-3.5 py-1.5 text-xs"
                 >
                   ← Anterior
@@ -162,7 +190,7 @@ export function SpaceGallery({
                       type="button"
                       onClick={() => setActiveIndex(idx)}
                       aria-label={`Ir a foto ${idx + 1}`}
-                      className={`h-2 rounded-full transition-all ${
+                      className={`h-2 rounded-full transition-all cursor-pointer ${
                         idx === activeIndex ? "w-6 bg-azul" : "w-2 bg-crema hover:bg-piedra"
                       }`}
                     />
@@ -178,8 +206,8 @@ export function SpaceGallery({
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </AdminDialog>
     </>
   );
 }

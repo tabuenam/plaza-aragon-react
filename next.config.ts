@@ -45,6 +45,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns,
     dangerouslyAllowLocalIP: process.env.NODE_ENV !== "production" || isLocalSupabase,
   },

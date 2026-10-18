@@ -150,7 +150,7 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
         </div>
       </section>
 
-      <section className="card p-0 overflow-hidden">
+      <section className="defer-section card p-0 overflow-hidden">
         <div className="p-5 border-b border-crema bg-white">
           <h2 className="font-display text-lg font-bold text-azul">Libro de Entradas</h2>
           <p className="text-xs text-piedra">Listado detallado de todas las transferencias registradas.</p>

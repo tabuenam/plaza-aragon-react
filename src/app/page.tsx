@@ -84,6 +84,7 @@ const FAQS = [
 ];
 
 export default async function HomePage() {
+  "use cache";
   const fetchedSpaces = await getPublicSpaces();
   const spaces = fetchedSpaces.length > 0 ? fetchedSpaces : fallbackSpaces;
   const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "50499999999";
@@ -123,14 +124,14 @@ export default async function HomePage() {
         <PlazaInteractiveSection spaces={spaces} whatsapp={whatsapp} />
 
         {/* ───────────── COMPACT 3-COLUMN BENEFITS STRIP ───────────── */}
-        <section id="ventajas" className="border-y border-crema bg-white py-12 sm:py-16">
+        <section id="ventajas" className="defer-section border-y border-crema bg-white py-12 sm:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <h2 className="font-display text-2xl font-bold text-azul sm:text-3xl">
               Por qué elegir Plaza Aragón
             </h2>
 
             <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5">
+              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5 transition duration-200 hover:border-azul/30 hover:bg-arena/70 hover:shadow-xs">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-azul font-display text-sm font-bold text-white">
                   01
                 </span>
@@ -142,7 +143,7 @@ export default async function HomePage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5">
+              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5 transition duration-200 hover:border-barro/30 hover:bg-arena/70 hover:shadow-xs">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-barro font-display text-sm font-bold text-white">
                   02
                 </span>
@@ -154,7 +155,7 @@ export default async function HomePage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5">
+              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5 transition duration-200 hover:border-turquesa/30 hover:bg-arena/70 hover:shadow-xs">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-turquesa font-display text-sm font-bold text-white">
                   03
                 </span>
@@ -170,7 +171,7 @@ export default async function HomePage() {
         </section>
 
         {/* ───────────── FAQ ACCORDION ───────────── */}
-        <section id="preguntas" className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <section id="preguntas" className="defer-section mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
           <h2 className="font-display text-2xl font-bold text-azul sm:text-3xl">
             Preguntas frecuentes
           </h2>

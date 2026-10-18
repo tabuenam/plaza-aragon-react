@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { updateLeaseAction } from "@/app/admin/actions";
+import { AdminDialog } from "@/app/admin/admin-dialog";
 import { useAdminToast } from "@/app/admin/admin-toast";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -163,9 +164,9 @@ export function EditLeaseModal({
       <button
         type="button"
         onClick={handleOpen}
-        className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-crema bg-white px-3 py-1.5 text-xs font-semibold text-azul transition hover:bg-crema/40 active:scale-95"
+        className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-crema bg-white px-3 py-1.5 text-xs font-semibold text-azul transition hover:bg-crema/40 active:scale-95 cursor-pointer"
       >
-        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -176,42 +177,31 @@ export function EditLeaseModal({
         Modificar
       </button>
 
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={`edit-lease-title-${lease.id}`}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
-        >
-          <div
-            className="fixed inset-0 bg-tinta/60 backdrop-blur-xs transition-opacity"
-            onClick={handleClose}
-          />
-
-          <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-crema">
-            <header className="flex items-center justify-between border-b border-crema px-5 py-4 sm:px-6">
-              <div>
-                <h3
-                  id={`edit-lease-title-${lease.id}`}
-                  className="font-display text-lg font-bold text-azul sm:text-xl"
-                >
-                  Modificar Contrato · {lease.space.name}
-                </h3>
-                <p className="text-xs text-piedra">
-                  Ajuste las condiciones, montos o documentos del contrato de arrendamiento.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-piedra transition hover:bg-arena hover:text-tinta"
-                aria-label="Cerrar ventana"
+      <AdminDialog open={isOpen} onClose={handleClose} labelledBy={`edit-lease-title-${lease.id}`} className="max-w-xl">
+        <div className="flex max-h-[92vh] w-full flex-col overflow-hidden bg-white">
+          <header className="flex items-center justify-between border-b border-crema px-5 py-4 sm:px-6">
+            <div>
+              <h3
+                id={`edit-lease-title-${lease.id}`}
+                className="font-display text-lg font-bold text-azul sm:text-xl"
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </header>
+                Modificar Contrato · {lease.space.name}
+              </h3>
+              <p className="text-xs text-piedra">
+                Ajuste las condiciones, montos o documentos del contrato de arrendamiento.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-piedra transition hover:bg-arena hover:text-tinta cursor-pointer"
+              aria-label="Cerrar ventana"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </header>
 
             <form
               ref={formRef}
@@ -517,9 +507,8 @@ export function EditLeaseModal({
                 </SubmitButton>
               </footer>
             </form>
-          </div>
         </div>
-      )}
+      </AdminDialog>
     </>
   );
 }

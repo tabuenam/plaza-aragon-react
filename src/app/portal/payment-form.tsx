@@ -7,12 +7,11 @@ import { compressImage } from "@/lib/compress-image";
 import { currentPeriod, formatMoney, MONTHS } from "@/lib/format";
 import type { FormState } from "@/lib/types";
 import Image from "next/image";
-import { useActionState, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 
 const initialState: FormState = { ok: true, message: "" };
 
 export function PaymentForm({ defaultRent }: { defaultRent: number }) {
-  const [state, formAction] = useActionState(submitPaymentAction, initialState);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [compressedFile, setCompressedFile] = useState<File | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
@@ -28,6 +27,34 @@ export function PaymentForm({ defaultRent }: { defaultRent: number }) {
 
   const years = [cur.year - 1, cur.year, cur.year + 1];
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  function handleClearImage() {
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setCompressedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+  }
+
+  const [state, formAction] = useActionState(
+    async (prev: FormState, formData: FormData) => {
+      const result = await submitPaymentAction(prev, formData);
+      if (result.ok) {
+        handleClearImage();
+        formRef.current?.reset();
+      }
+      return result;
+    },
+    initialState
+  );
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -37,17 +64,13 @@ export function PaymentForm({ defaultRent }: { defaultRent: number }) {
       const optimized = await compressImage(file);
       setCompressedFile(optimized);
       const url = URL.createObjectURL(optimized);
-      setPreviewUrl(url);
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
     } finally {
       setIsProcessingImage(false);
     }
-  }
-
-  function handleClearImage() {
-    setPreviewUrl(null);
-    setCompressedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    if (cameraInputRef.current) cameraInputRef.current.value = "";
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -60,15 +83,11 @@ export function PaymentForm({ defaultRent }: { defaultRent: number }) {
 
     startTransition(async () => {
       await formAction(formData);
-      if (state.ok) {
-        handleClearImage();
-        formRef.current?.reset();
-      }
     });
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} data-testid="payment-form" className="space-y-5">
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label htmlFor="period_month" className="label">

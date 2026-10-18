@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { FormState, SpaceStatus } from "@/lib/types";
+import {
+  isValidSpaceStatus,
+  sanitizeStorageFileName,
+  validateLeaseInput,
+  validateSpaceUpdateInput,
+} from "@/lib/validation";
 
 export async function verifyPaymentAction(formData: FormData): Promise<void> {
   const user = await requireAdmin();
@@ -56,7 +62,7 @@ export async function updateSpaceStatusAction(_prevState: FormState, formData: F
   const status = String(formData.get("status") ?? "") as SpaceStatus;
   const price = Number(formData.get("price"));
 
-  if (!spaceId || !["available", "occupied", "construction"].includes(status)) {
+  if (!spaceId || !isValidSpaceStatus(status)) {
     return { ok: false, message: "Datos del local inválidos." };
   }
 
@@ -84,17 +90,8 @@ export async function updateSpaceAction(_prevState: FormState, formData: FormDat
   const price = Number(formData.get("price"));
   const sortOrder = Number(formData.get("sort_order") ?? 0);
 
-  if (!spaceId || !name) {
-    return { ok: false, message: "El nombre del local es obligatorio." };
-  }
-
-  if (!["available", "occupied", "construction"].includes(status)) {
-    return { ok: false, message: "El estado del local seleccionado no es válido." };
-  }
-
-  if (isNaN(price) || price < 0) {
-    return { ok: false, message: "El precio mensual debe ser un número mayor o igual a 0." };
-  }
+  const validationError = validateSpaceUpdateInput({ spaceId, name, status, price });
+  if (validationError) return validationError;
 
   const existingImagesRaw = String(formData.get("existing_images") ?? "[]");
   let finalImageUrls: string[] = [];
@@ -109,8 +106,7 @@ export async function updateSpaceAction(_prevState: FormState, formData: FormDat
 
   for (const file of newImages) {
     if (file && file.size > 0 && typeof file.arrayBuffer === "function") {
-      const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const safeExt = ["jpg", "jpeg", "png", "webp"].includes(fileExt) ? fileExt : "jpg";
+      const { ext: safeExt } = sanitizeStorageFileName(file.name, ["jpg", "jpeg", "png", "webp"]);
       const filePath = `${spaceId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
       const arrayBuffer = await file.arrayBuffer();
       const fileBuffer = Buffer.from(arrayBuffer);
@@ -158,17 +154,8 @@ export async function createLeaseAction(_prevState: FormState, formData: FormDat
   const endDate = String(formData.get("end_date") ?? "").trim();
   const monthlyRent = Number(formData.get("monthly_rent"));
 
-  if (!spaceId || !tenantId || !startDate || !endDate) {
-    return { ok: false, message: "Todos los campos del contrato son obligatorios." };
-  }
-
-  if (isNaN(monthlyRent) || monthlyRent <= 0) {
-    return { ok: false, message: "La renta mensual debe ser un monto mayor a 0." };
-  }
-
-  if (endDate <= startDate) {
-    return { ok: false, message: "La fecha de finalización debe ser posterior a la fecha de inicio." };
-  }
+  const leaseValidationError = validateLeaseInput({ spaceId, tenantId, startDate, endDate, monthlyRent });
+  if (leaseValidationError) return leaseValidationError;
 
   const supabase = user.supabase;
 

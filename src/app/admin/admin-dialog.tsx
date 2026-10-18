@@ -11,12 +11,14 @@ export function AdminDialog({
   open,
   onClose,
   labelledBy,
+  ariaLabel,
   className = "max-w-md",
   children,
 }: {
   open: boolean;
   onClose: () => void;
-  labelledBy: string;
+  labelledBy?: string;
+  ariaLabel?: string;
   className?: string;
   children: ReactNode;
 }) {
@@ -36,18 +38,19 @@ export function AdminDialog({
     if (!dialog || event.target !== dialog) return;
     if ("closedBy" in HTMLDialogElement.prototype) return;
     const rect = dialog.getBoundingClientRect();
-    const inside =
+    const isDialogContent =
       rect.top <= event.clientY &&
-      event.clientY <= rect.bottom &&
+      event.clientY <= rect.top + rect.height &&
       rect.left <= event.clientX &&
-      event.clientX <= rect.right;
-    if (!inside) dialog.close();
+      event.clientX <= rect.left + rect.width;
+    if (!isDialogContent) dialog.close();
   }
 
   return (
     <dialog
       ref={ref}
       aria-labelledby={labelledBy}
+      aria-label={ariaLabel}
       onClose={onClose}
       onClick={handleClick}
       className={`m-auto max-h-[92vh] w-[calc(100%-1.5rem)] overflow-hidden rounded-3xl bg-white p-0 text-tinta shadow-2xl ring-1 ring-crema backdrop:bg-tinta/60 backdrop:backdrop-blur-xs ${className}`}

@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { updateSpaceAction } from "@/app/admin/actions";
+import { AdminDialog } from "@/app/admin/admin-dialog";
 import { useAdminToast } from "@/app/admin/admin-toast";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -101,7 +102,7 @@ export function EditSpaceModal({ space }: { space: Space }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="inline-flex min-h-8 items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-piedra transition hover:bg-crema/50 hover:text-azul active:scale-95"
+        className="inline-flex min-h-8 items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-piedra transition hover:bg-crema/50 hover:text-azul active:scale-95 cursor-pointer"
       >
         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -114,37 +115,26 @@ export function EditSpaceModal({ space }: { space: Space }) {
         Editar local
       </button>
 
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={`edit-title-${space.id}`}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
-        >
-          <div
-            className="fixed inset-0 bg-tinta/60 backdrop-blur-xs transition-opacity"
-            onClick={handleClose}
-          />
-
-          <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-crema">
-            <header className="flex items-center justify-between border-b border-crema px-5 py-4 sm:px-6">
-              <div>
-                <h3 id={`edit-title-${space.id}`} className="font-display text-lg font-bold text-azul sm:text-xl">
-                  Editar {space.name}
-                </h3>
-                <p className="text-xs text-piedra">Modifique los atributos y fotografías de este local comercial.</p>
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-piedra transition hover:bg-arena hover:text-tinta"
-                aria-label="Cerrar ventana"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </header>
+      <AdminDialog open={isOpen} onClose={handleClose} labelledBy={`edit-title-${space.id}`} className="max-w-2xl">
+        <div className="flex max-h-[92vh] w-full flex-col overflow-hidden bg-white">
+          <header className="flex items-center justify-between border-b border-crema px-5 py-4 sm:px-6">
+            <div>
+              <h3 id={`edit-title-${space.id}`} className="font-display text-lg font-bold text-azul sm:text-xl">
+                Editar {space.name}
+              </h3>
+              <p className="text-xs text-piedra">Modifique los atributos y fotografías de este local comercial.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-piedra transition hover:bg-arena hover:text-tinta cursor-pointer"
+              aria-label="Cerrar ventana"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </header>
 
             <form ref={formRef} onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 space-y-5">
               <input type="hidden" name="space_id" value={space.id} />
@@ -336,9 +326,8 @@ export function EditSpaceModal({ space }: { space: Space }) {
                 </SubmitButton>
               </footer>
             </form>
-          </div>
         </div>
-      )}
+      </AdminDialog>
     </>
   );
 }

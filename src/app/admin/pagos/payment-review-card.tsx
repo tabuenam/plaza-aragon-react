@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Image from "next/image";
 import { verifyPaymentAction, rejectPaymentAction } from "@/app/admin/actions";
+import { AdminDialog } from "@/app/admin/admin-dialog";
 import { useAdminToast } from "@/app/admin/admin-toast";
 import { StatusBadge } from "@/components/status-badge";
 import { SubmitButton } from "@/components/submit-button";
@@ -14,6 +15,7 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showFullImage, setShowFullImage] = useState(false);
+  const dialogTitleId = useId();
 
   const quickReasons = [
     "Imagen borrosa o ilegible",
@@ -40,7 +42,7 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
   }
 
   return (
-    <div className="card border border-crema space-y-4">
+    <div data-testid={`payment-review-card-${payment.id}`} className="card border border-crema space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -77,12 +79,14 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
             <button
               type="button"
               onClick={() => setShowFullImage(true)}
+              aria-label={`Ampliar comprobante de ${payment.lease?.space?.name || "local"}`}
               className="relative aspect-4/3 h-24 overflow-hidden rounded-xl border border-crema bg-arena transition hover:opacity-90 cursor-pointer"
             >
               <Image
                 src={payment.signed_receipt_url}
                 alt="Comprobante de transferencia"
                 fill
+                sizes="128px"
                 className="object-cover"
               />
             </button>
@@ -170,7 +174,7 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
               <button
                 type="button"
                 onClick={() => setIsRejecting(true)}
-                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-barro/30 bg-barro-claro/30 px-4 py-2 text-xs font-semibold text-barro transition hover:bg-barro-claro"
+                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-barro/30 bg-barro-claro/30 px-4 py-2 text-xs font-semibold text-barro transition hover:bg-barro-claro cursor-pointer"
               >
                 ✕ Rechazar comprobante
               </button>
@@ -179,37 +183,38 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
         </div>
       )}
 
-      {showFullImage && payment.signed_receipt_url && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs"
-          onClick={() => setShowFullImage(false)}
+      {payment.signed_receipt_url && (
+        <AdminDialog
+          open={showFullImage}
+          onClose={() => setShowFullImage(false)}
+          labelledBy={dialogTitleId}
+          className="max-w-2xl"
         >
-          <div
-            className="relative max-h-[90vh] max-w-2xl w-full overflow-hidden rounded-2xl bg-white p-3"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-2 border-b border-crema">
-              <span className="font-semibold text-xs text-tinta">
+          <div className="flex max-h-[90vh] w-full flex-col overflow-hidden bg-white p-3 sm:p-4">
+            <div className="flex items-center justify-between pb-2.5 border-b border-crema">
+              <span id={dialogTitleId} className="font-display font-bold text-sm text-azul">
                 Comprobante · {payment.lease?.space?.name}
               </span>
               <button
                 type="button"
                 onClick={() => setShowFullImage(false)}
-                className="text-xs font-bold text-piedra hover:text-tinta px-2 py-1"
+                className="rounded-lg text-xs font-bold text-piedra hover:bg-arena hover:text-tinta px-2.5 py-1 cursor-pointer"
+                aria-label="Cerrar vista previa"
               >
                 Cerrar ✕
               </button>
             </div>
-            <div className="relative mt-2 aspect-3/4 max-h-[75vh] w-full">
+            <div className="relative mt-2 aspect-3/4 max-h-[75vh] w-full bg-arena/40 rounded-xl">
               <Image
                 src={payment.signed_receipt_url}
                 alt="Comprobante en alta resolución"
                 fill
+                sizes="(max-width: 768px) 100vw, 672px"
                 className="object-contain"
               />
             </div>
           </div>
-        </div>
+        </AdminDialog>
       )}
     </div>
   );

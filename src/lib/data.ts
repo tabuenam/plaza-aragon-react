@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import type { AdminLease, AdminTenant, LeaseWithRelations, Payment, Space, Tenant } from "@/lib/types";
 
 export async function getPublicSpaces(): Promise<Space[]> {
+  "use cache";
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return [];
   try {
     const supabase = createSupabasePublicClient();
@@ -85,17 +86,12 @@ export async function getAllSpacesWithActiveLease(): Promise<
   (Space & { current_lease?: { tenant: Pick<Tenant, "name" | "contact_info">; monthly_rent: number } | null })[]
 > {
   const supabase = await createSupabaseServerClient();
-  const { data: spaces } = await supabase
-    .from("spaces")
-    .select("*")
-    .order("sort_order", { ascending: true });
+  const [{ data: spaces }, { data: leases }] = await Promise.all([
+    supabase.from("spaces").select("*").order("sort_order", { ascending: true }),
+    supabase.from("leases").select("space_id, monthly_rent, tenant:tenants(name, contact_info)").eq("active", true),
+  ]);
 
   if (!spaces) return [];
-
-  const { data: leases } = await supabase
-    .from("leases")
-    .select("space_id, monthly_rent, tenant:tenants(name, contact_info)")
-    .eq("active", true);
 
   const leaseMap = new Map();
   if (leases) {

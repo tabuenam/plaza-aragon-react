@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Image from "next/image";
+import { AdminDialog } from "@/app/admin/admin-dialog";
 import type { ContractAttachment } from "@/lib/types";
 
 export function ContractAttachmentsView({
@@ -12,6 +13,7 @@ export function ContractAttachmentsView({
   compact?: boolean;
 }) {
   const [activePhoto, setActivePhoto] = useState<ContractAttachment | null>(null);
+  const titleId = useId();
 
   if (!attachments || attachments.length === 0) {
     return (
@@ -60,7 +62,7 @@ export function ContractAttachmentsView({
                 key={photo.path || idx}
                 type="button"
                 onClick={() => setActivePhoto(photo)}
-                className="group relative h-16 w-16 overflow-hidden rounded-xl border border-crema bg-arena transition hover:border-turquesa hover:ring-2 hover:ring-turquesa/40 focus:outline-hidden"
+                className="group relative h-16 w-16 overflow-hidden rounded-xl border border-crema bg-arena transition hover:border-turquesa hover:ring-2 hover:ring-turquesa/40 cursor-pointer"
                 title={`Ver fotografía ${idx + 1}`}
               >
                 <Image
@@ -79,20 +81,17 @@ export function ContractAttachmentsView({
         </div>
       )}
 
-      {activePhoto && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-xs"
-          onClick={() => setActivePhoto(null)}
-        >
-          <div
-            className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <AdminDialog
+        open={activePhoto !== null}
+        onClose={() => setActivePhoto(null)}
+        labelledBy={titleId}
+        className="max-w-3xl"
+      >
+        {activePhoto && (
+          <div className="flex max-h-[92vh] w-full flex-col overflow-hidden bg-white">
             <div className="flex items-center justify-between border-b border-crema px-5 py-3">
               <div>
-                <h4 className="font-display text-sm font-bold text-azul">
+                <h4 id={titleId} className="font-display text-sm font-bold text-azul">
                   Fotografía de Contrato · {activePhoto.name}
                 </h4>
               </div>
@@ -108,7 +107,7 @@ export function ContractAttachmentsView({
                 <button
                   type="button"
                   onClick={() => setActivePhoto(null)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-piedra hover:bg-arena hover:text-tinta"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-piedra hover:bg-arena hover:text-tinta cursor-pointer"
                   aria-label="Cerrar vista previa"
                 >
                   ✕
@@ -126,8 +125,8 @@ export function ContractAttachmentsView({
               />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </AdminDialog>
     </div>
   );
 }

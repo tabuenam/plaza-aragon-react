@@ -19,8 +19,10 @@ export default async function AdminOverviewPage() {
   await requireAdmin();
 
   const cur = currentPeriod();
-  const spaces = await getAllSpacesWithActiveLease();
-  const currentMonthPayments = await getAdminPayments(cur.year, cur.month);
+  const [spaces, currentMonthPayments] = await Promise.all([
+    getAllSpacesWithActiveLease(),
+    getAdminPayments(cur.year, cur.month),
+  ]);
 
   const occupiedCount = spaces.filter((s) => s.status === "occupied").length;
   const constructionCount = spaces.filter((s) => s.status === "construction").length;

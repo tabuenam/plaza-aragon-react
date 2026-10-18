@@ -9,7 +9,8 @@ export const metadata: Metadata = {
   description: "Acceso para inquilinos y administración de Plaza Aragón en Olanchito.",
 };
 
-export default function IngresarPage() {
+export default async function IngresarPage() {
+  "use cache";
   return (
     <div className="flex min-h-dvh flex-col bg-arena">
       <div className="lenca-band h-2 w-full" />

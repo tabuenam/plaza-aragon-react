@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireTenant } from "@/lib/auth";
 import { getTenantLeaseWithSpace } from "@/lib/data";
 import type { FormState } from "@/lib/types";
+import { sanitizeStorageFileName, validatePaymentInput } from "@/lib/validation";
 
 export async function submitPaymentAction(_prevState: FormState, formData: FormData): Promise<FormState> {
   const user = await requireTenant();
@@ -18,22 +19,15 @@ export async function submitPaymentAction(_prevState: FormState, formData: FormD
   const amount = Number(formData.get("amount"));
   const receiptFile = formData.get("receipt") as File | null;
 
-  if (!periodMonth || periodMonth < 1 || periodMonth > 12) {
-    return { ok: false, message: "Seleccione un mes válido." };
-  }
+  const validationError = validatePaymentInput({
+    periodMonth,
+    periodYear,
+    amount,
+    hasFile: Boolean(receiptFile && receiptFile.size > 0),
+  });
+  if (validationError) return validationError;
 
-  if (!periodYear || periodYear < 2020 || periodYear > 2100) {
-    return { ok: false, message: "Seleccione un año válido." };
-  }
-
-  if (!amount || amount <= 0) {
-    return { ok: false, message: "Ingrese un monto válido." };
-  }
-
-  if (!receiptFile || receiptFile.size === 0) {
-    return { ok: false, message: "Debe adjuntar el comprobante de transferencia bancaria." };
-  }
-
+  const validReceiptFile = receiptFile!;
   const supabase = user.supabase;
 
   const { data: existingPayment } = await supabase
@@ -53,15 +47,14 @@ export async function submitPaymentAction(_prevState: FormState, formData: FormD
     };
   }
 
-  const fileExt = receiptFile.name.split(".").pop()?.toLowerCase() || "jpg";
-  const safeExt = ["jpg", "jpeg", "png", "webp", "heic"].includes(fileExt) ? fileExt : "jpg";
+  const { ext: safeExt } = sanitizeStorageFileName(validReceiptFile.name, ["jpg", "jpeg", "png", "webp", "heic"]);
   const filePath = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
 
-  const arrayBuffer = await receiptFile.arrayBuffer();
+  const arrayBuffer = await validReceiptFile.arrayBuffer();
   const fileBuffer = Buffer.from(arrayBuffer);
 
   const { error: uploadError } = await supabase.storage.from("receipts").upload(filePath, fileBuffer, {
-    contentType: receiptFile.type || "image/jpeg",
+    contentType: validReceiptFile.type || "image/jpeg",
     upsert: false,
   });
 
