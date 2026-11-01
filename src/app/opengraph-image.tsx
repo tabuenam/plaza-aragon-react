@@ -84,18 +84,47 @@ export default function OpenGraphImage() {
 
         {/* Center Main Titles */}
         <div style={{ display: "flex", flexDirection: "column", marginTop: "12px" }}>
-          <h1
-            style={{
-              fontSize: "68px",
-              fontWeight: 800,
-              margin: 0,
-              color: "#ffffff",
-              letterSpacing: "-1.5px",
-              lineHeight: 1.1,
-            }}
-          >
-            Plaza Aragón
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+            <svg width="84" height="84" viewBox="0 0 40 40">
+              <rect width="40" height="40" rx="11" fill="#0b3d66" />
+              <rect
+                x="2"
+                y="2"
+                width="36"
+                height="36"
+                rx="9"
+                fill="none"
+                stroke="#ffffff"
+                strokeOpacity="0.22"
+                strokeWidth="1"
+              />
+              <path
+                d="M9 33V19a11 11 0 0 1 22 0v14"
+                fill="none"
+                stroke="#df9b1a"
+                strokeWidth="2.75"
+                strokeLinecap="round"
+              />
+              <path d="M15 33v-9a5 5 0 0 1 10 0v9z" fill="#b84a24" />
+              <circle cx="16.5" cy="12.5" r="1.2" fill="#ffffff" />
+              <circle cx="23.5" cy="12.5" r="1.2" fill="#ffffff" />
+              <circle cx="20" cy="15" r="1.2" fill="#ffffff" />
+              <circle cx="16.5" cy="17.5" r="1.2" fill="#ffffff" />
+              <circle cx="23.5" cy="17.5" r="1.2" fill="#ffffff" />
+            </svg>
+            <h1
+              style={{
+                fontSize: "68px",
+                fontWeight: 800,
+                margin: 0,
+                color: "#ffffff",
+                letterSpacing: "-1.5px",
+                lineHeight: 1.1,
+              }}
+            >
+              Plaza Aragón
+            </h1>
+          </div>
           <p
             style={{
               fontSize: "28px",
