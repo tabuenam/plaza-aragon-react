@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { getAdminPayments } from "@/lib/data";
+import { getActiveLeases, getAdminPayments } from "@/lib/data";
 import { currentPeriod, formatPeriod, MONTHS } from "@/lib/format";
+import { CreatePaymentModal } from "@/app/admin/pagos/create-payment-modal";
 import { PaymentReviewCard } from "@/app/admin/pagos/payment-review-card";
 
 export const metadata: Metadata = {
@@ -23,25 +24,42 @@ export default async function AdminPagosPage(props: { searchParams: SearchParams
   const selectedMonth = searchParams.mes ? Number(searchParams.mes) : cur.month;
   const selectedYear = searchParams.ano ? Number(searchParams.ano) : cur.year;
 
-  const payments = await getAdminPayments(selectedYear, selectedMonth);
+  const [payments, activeLeases] = await Promise.all([
+    getAdminPayments(selectedYear, selectedMonth),
+    getActiveLeases(),
+  ]);
 
   const pendingList = payments.filter((p) => p.status === "pending");
   const verifiedList = payments.filter((p) => p.status === "verified");
   const rejectedList = payments.filter((p) => p.status === "rejected");
 
+  const years = Array.from(new Set([cur.year - 1, cur.year, cur.year + 1, selectedYear])).sort(
+    (a, b) => a - b
+  );
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-azul sm:text-3xl">
             Verificación de Pagos
           </h1>
           <p className="mt-1 text-sm text-piedra">
-            Revisión de comprobantes transferidos para {formatPeriod({ month: selectedMonth, year: selectedYear })}.
+            Revisión y registro de comprobantes para {formatPeriod({ month: selectedMonth, year: selectedYear })}.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <CreatePaymentModal
+            activeLeases={activeLeases}
+            defaultMonth={selectedMonth}
+            defaultYear={selectedYear}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-1.5">
           {MONTHS.map((name, index) => {
             const m = index + 1;
             const isSelected = m === selectedMonth;
@@ -56,6 +74,25 @@ export default async function AdminPagosPage(props: { searchParams: SearchParams
                 }`}
               >
                 {name.slice(0, 3)}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {years.map((y) => {
+            const isSelected = y === selectedYear;
+            return (
+              <Link
+                key={y}
+                href={`/admin/pagos?mes=${selectedMonth}&ano=${y}`}
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  isSelected
+                    ? "bg-azul text-white"
+                    : "bg-white text-piedra border border-crema hover:bg-crema/40"
+                }`}
+              >
+                {y}
               </Link>
             );
           })}

@@ -64,6 +64,19 @@ export function validatePaymentInput(input: {
   return null;
 }
 
+export function validateAdminPaymentInput(input: {
+  leaseId: string;
+  periodMonth: number;
+  periodYear: number;
+  amount: number;
+  hasFile: boolean;
+}): FormState | null {
+  if (!input.leaseId.trim()) {
+    return { ok: false, message: "Seleccione un local con contrato activo." };
+  }
+  return validatePaymentInput(input);
+}
+
 export function sanitizeStorageFileName(
   rawName: string,
   allowedExtensions: readonly string[] = ["jpg", "jpeg", "png", "webp", "pdf", "heic", "heif"]

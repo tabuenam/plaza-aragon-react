@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   isValidSpaceStatus,
   sanitizeStorageFileName,
+  validateAdminPaymentInput,
   validateLeaseInput,
   validatePaymentInput,
   validateSpaceUpdateInput,
@@ -43,6 +44,15 @@ describe("domain validation utilities", () => {
         hasFile: true,
       });
       assert.equal(err, null);
+
+      const adminErr = validateAdminPaymentInput({
+        leaseId: "lease-1",
+        periodMonth: 11,
+        periodYear: 2026,
+        amount: 8500,
+        hasFile: true,
+      });
+      assert.equal(adminErr, null);
     });
 
     it("sanitizes storage filenames and preserves allowed extensions", () => {
@@ -172,6 +182,16 @@ describe("domain validation utilities", () => {
       assert.equal(
         validatePaymentInput({ periodMonth: 5, periodYear: 2026, amount: 8000, hasFile: false })?.ok,
         false
+      );
+      assert.equal(
+        validateAdminPaymentInput({
+          leaseId: "  ",
+          periodMonth: 5,
+          periodYear: 2026,
+          amount: 8000,
+          hasFile: true,
+        })?.message,
+        "Seleccione un local con contrato activo."
       );
     });
   });

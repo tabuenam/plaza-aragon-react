@@ -111,7 +111,7 @@ create policy "payments_admin_write" on public.payments
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
-  ('receipts', 'receipts', false, 5242880, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']),
+  ('receipts', 'receipts', false, 10485760, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']),
   ('spaces', 'spaces', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
   ('contracts', 'contracts', false, 20971520, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'])
 on conflict (id) do nothing;
@@ -126,6 +126,10 @@ create policy "receipts_select_own_or_admin" on storage.objects
     bucket_id = 'receipts'
     and ((storage.foldername(name))[1] = (select auth.uid())::text or public.is_admin())
   );
+
+create policy "receipts_admin_all" on storage.objects
+  for all to authenticated using (bucket_id = 'receipts' and public.is_admin())
+  with check (bucket_id = 'receipts' and public.is_admin());
 
 create policy "spaces_admin_all" on storage.objects
   for all to authenticated using (bucket_id = 'spaces' and public.is_admin())

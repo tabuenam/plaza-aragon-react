@@ -41,6 +41,8 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
     );
   }
 
+  const isPdfReceipt = Boolean(payment.receipt_path?.toLowerCase().endsWith(".pdf"));
+
   return (
     <div data-testid={`payment-review-card-${payment.id}`} className="card border border-crema space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -75,39 +77,53 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
       {payment.signed_receipt_url && (
         <div className="border-t border-crema/60 pt-3">
           <p className="text-xs font-semibold text-piedra uppercase mb-2">Comprobante adjunto</p>
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setShowFullImage(true)}
-              aria-label={`Ampliar comprobante de ${payment.lease?.space?.name || "local"}`}
-              className="relative aspect-4/3 h-24 overflow-hidden rounded-xl border border-crema bg-arena transition hover:opacity-90 cursor-pointer"
+          {isPdfReceipt ? (
+            <a
+              href={payment.signed_receipt_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 rounded-xl border border-crema bg-arena/50 px-3.5 py-2.5 text-xs font-semibold text-azul transition hover:border-turquesa hover:bg-turquesa-claro/30"
             >
-              <Image
-                src={payment.signed_receipt_url}
-                alt="Comprobante de transferencia"
-                fill
-                sizes="128px"
-                className="object-cover"
-              />
-            </button>
-            <div className="space-y-1">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-barro-claro font-bold text-[10px] text-barro">
+                PDF
+              </span>
+              <span>Abrir comprobante en PDF ↗</span>
+            </a>
+          ) : (
+            <div className="flex items-center gap-4">
               <button
                 type="button"
                 onClick={() => setShowFullImage(true)}
-                className="text-xs font-semibold text-azul hover:underline block cursor-pointer"
+                aria-label={`Ampliar comprobante de ${payment.lease?.space?.name || "local"}`}
+                className="relative aspect-4/3 h-24 overflow-hidden rounded-xl border border-crema bg-arena transition hover:opacity-90 cursor-pointer"
               >
-                Ampliar comprobante 🔍
+                <Image
+                  src={payment.signed_receipt_url}
+                  alt="Comprobante de transferencia"
+                  fill
+                  sizes="128px"
+                  className="object-cover"
+                />
               </button>
-              <a
-                href={payment.signed_receipt_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-piedra hover:underline block"
-              >
-                Abrir en nueva pestaña ↗
-              </a>
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setShowFullImage(true)}
+                  className="text-xs font-semibold text-azul hover:underline block cursor-pointer"
+                >
+                  Ampliar comprobante 🔍
+                </button>
+                <a
+                  href={payment.signed_receipt_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-piedra hover:underline block"
+                >
+                  Abrir en nueva pestaña ↗
+                </a>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -183,7 +199,7 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
         </div>
       )}
 
-      {payment.signed_receipt_url && (
+      {payment.signed_receipt_url && !isPdfReceipt && (
         <AdminDialog
           open={showFullImage}
           onClose={() => setShowFullImage(false)}

@@ -159,6 +159,18 @@ export async function getContractSignedUrl(path: string): Promise<string | null>
   return data?.signedUrl ?? null;
 }
 
+export async function getActiveLeases(): Promise<AdminLease[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("leases")
+    .select("*, space:spaces(id, name, status, price, sort_order), tenant:tenants(id, name, contact_info)")
+    .eq("active", true);
+
+  if (error || !data) return [];
+  const leases = data as unknown as (AdminLease & { space: AdminLease["space"] & { sort_order?: number } })[];
+  return leases.sort((a, b) => (a.space?.sort_order ?? 0) - (b.space?.sort_order ?? 0));
+}
+
 export async function getAllLeases(): Promise<AdminLease[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase

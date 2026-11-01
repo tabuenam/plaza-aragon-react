@@ -7,9 +7,126 @@ import type { FormState, SpaceStatus } from "@/lib/types";
 import {
   isValidSpaceStatus,
   sanitizeStorageFileName,
+  validateAdminPaymentInput,
   validateLeaseInput,
   validateSpaceUpdateInput,
 } from "@/lib/validation";
+
+export async function createAdminPaymentAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const leaseId = String(formData.get("lease_id") ?? "").trim();
+  const periodMonth = Number(formData.get("period_month"));
+  const periodYear = Number(formData.get("period_year"));
+  const amount = Number(formData.get("amount"));
+  const adminNote = String(formData.get("admin_note") ?? "").trim();
+  const receiptFile = formData.get("receipt") as File | null;
+
+  const validationError = validateAdminPaymentInput({
+    leaseId,
+    periodMonth,
+    periodYear,
+    amount,
+    hasFile: Boolean(receiptFile && receiptFile.size > 0),
+  });
+  if (validationError) return validationError;
+
+  const validReceiptFile = receiptFile!;
+  const supabase = user.supabase;
+
+  const { data: lease } = await supabase
+    .from("leases")
+    .select("id, tenant_id, active")
+    .eq("id", leaseId)
+    .eq("active", true)
+    .maybeSingle();
+
+  if (!lease) {
+    return {
+      ok: false,
+      message: "El contrato seleccionado no está activo o no fue encontrado.",
+    };
+  }
+
+  const { data: existingPayment } = await supabase
+    .from("payments")
+    .select("id, status")
+    .eq("lease_id", lease.id)
+    .eq("period_year", periodYear)
+    .eq("period_month", periodMonth)
+    .neq("status", "rejected")
+    .maybeSingle();
+
+  if (existingPayment) {
+    const estado = existingPayment.status === "verified" ? "ya fue verificado" : "está pendiente de revisión";
+    return {
+      ok: false,
+      message: `Ya existe un pago registrado para este local en el período seleccionado que ${estado}.`,
+    };
+  }
+
+  const { ext: safeExt } = sanitizeStorageFileName(validReceiptFile.name, [
+    "jpg",
+    "jpeg",
+    "png",
+    "webp",
+    "pdf",
+    "heic",
+    "heif",
+  ]);
+  const filePath = `${lease.tenant_id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
+
+  const arrayBuffer = await validReceiptFile.arrayBuffer();
+  const fileBuffer = Buffer.from(arrayBuffer);
+  const contentType = validReceiptFile.type || (safeExt === "pdf" ? "application/pdf" : "image/jpeg");
+
+  const adminClient = createSupabaseAdminClient();
+  const { error: uploadError } = await supabase.storage.from("receipts").upload(filePath, fileBuffer, {
+    contentType,
+    upsert: false,
+  });
+
+  if (uploadError) {
+    const { error: adminUploadError } = await adminClient.storage.from("receipts").upload(filePath, fileBuffer, {
+      contentType,
+      upsert: false,
+    });
+    if (adminUploadError) {
+      return {
+        ok: false,
+        message: "No se pudo subir el archivo del comprobante. Intente de nuevo.",
+      };
+    }
+  }
+
+  const { error: insertError } = await supabase.from("payments").insert({
+    lease_id: lease.id,
+    amount,
+    period_month: periodMonth,
+    period_year: periodYear,
+    receipt_path: filePath,
+    status: "verified",
+    reviewed_at: new Date().toISOString(),
+    admin_note: adminNote || null,
+  });
+
+  if (insertError) {
+    await adminClient.storage.from("receipts").remove([filePath]);
+    return {
+      ok: false,
+      message: "Error al guardar el pago en el sistema. Intente de nuevo.",
+    };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/pagos");
+  revalidatePath("/admin/historial");
+  revalidatePath("/portal");
+
+  return {
+    ok: true,
+    message: "Pago registrado y verificado exitosamente.",
+  };
+}
 
 export async function verifyPaymentAction(formData: FormData): Promise<void> {
   const user = await requireAdmin();
