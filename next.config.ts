@@ -50,6 +50,7 @@ const nextConfig: NextConfig = {
     dangerouslyAllowLocalIP: process.env.NODE_ENV !== "production" || isLocalSupabase,
   },
   experimental: {
+    agentUpgrade: "security",
     serverActions: {
       bodySizeLimit: "15mb",
     },
