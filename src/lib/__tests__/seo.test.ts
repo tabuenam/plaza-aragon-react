@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
+import manifest from "../../app/manifest.ts";
 import robots from "../../app/robots.ts";
 import sitemap from "../../app/sitemap.ts";
 
@@ -121,6 +122,59 @@ describe("SEO and Generative Search Engine Configuration", () => {
       assert.ok(content.includes("Olanchito, Yoro"));
       assert.ok(content.includes("HNL"));
       assert.ok(content.includes("FAQ") || content.includes("Preguntas"));
+    });
+  });
+
+  describe("Website Logo, Favicon & Web Manifest Assets", () => {
+    it("provides a custom multi-resolution favicon.ico starting with 48x48 for Google Search", () => {
+      const faviconPath = path.resolve(process.cwd(), "src/app/favicon.ico");
+      assert.ok(fs.existsSync(faviconPath), "src/app/favicon.ico must exist");
+
+      const buf = fs.readFileSync(faviconPath);
+      // Ensure it is not the default 15086-byte Next.js starter favicon
+      assert.notEqual(buf.length, 15086, "favicon.ico must not be the default Next.js starter icon");
+      // ICO header: reserved = 0, type = 1 (ICO), count = 3
+      assert.equal(buf.readUInt16LE(0), 0);
+      assert.equal(buf.readUInt16LE(2), 1);
+      assert.equal(buf.readUInt16LE(4), 3);
+
+      // First directory entry must be 48x48 (Google Search multiple of 48px requirement)
+      assert.equal(buf.readUInt8(6), 48);
+      assert.equal(buf.readUInt8(7), 48);
+    });
+
+    it("provides vector and high-resolution raster logo icons across app/ and public/", () => {
+      const svgPath = path.resolve(process.cwd(), "src/app/icon.svg");
+      assert.ok(fs.existsSync(svgPath), "src/app/icon.svg must exist");
+      const svgContent = fs.readFileSync(svgPath, "utf-8");
+      assert.ok(svgContent.includes("#0b3d66"), "icon.svg should use Plaza Aragón brand navy");
+      assert.ok(svgContent.includes("#df9b1a"), "icon.svg should use Plaza Aragón brand gold arch");
+
+      const checkPng = (relPath: string, expectedSize: number) => {
+        const full = path.resolve(process.cwd(), relPath);
+        assert.ok(fs.existsSync(full), `${relPath} must exist`);
+        const png = fs.readFileSync(full);
+        // PNG magic header + IHDR width/height at bytes 16..23
+        assert.equal(png.readUInt32BE(0), 0x89504e47);
+        assert.equal(png.readUInt32BE(16), expectedSize);
+        assert.equal(png.readUInt32BE(20), expectedSize);
+      };
+
+      checkPng("src/app/apple-icon.png", 180);
+      checkPng("src/app/icon1.png", 192);
+      checkPng("public/icon-192.png", 192);
+      checkPng("public/logo.png", 512);
+    });
+
+    it("exports a valid web app manifest referencing the Plaza Aragón icons", () => {
+      const webManifest = manifest();
+      assert.equal(webManifest.short_name, "Plaza Aragón");
+      assert.ok(Array.isArray(webManifest.icons));
+      const srcs = webManifest.icons.map((i) => i.src);
+      assert.ok(srcs.includes("/favicon.ico"));
+      assert.ok(srcs.includes("/icon.svg"));
+      assert.ok(srcs.includes("/icon-192.png"));
+      assert.ok(srcs.includes("/logo.png"));
     });
   });
 });
