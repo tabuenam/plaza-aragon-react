@@ -3,9 +3,9 @@ import type { Space } from "./types.ts";
 export type FilterOption = "all" | "open" | "occupied";
 
 const SPACE_HIGHLIGHTS: Record<number, string[]> = {
-  1: ["Planta baja", "Vitrina panorámica", "Acceso directo"],
-  2: ["Esquinero", "Alta visibilidad", "Medidor propio"],
-  3: ["Porcelanato", "Baño privado", "A/C instalado"],
+  1: ["Planta baja", "Esquinero", "Vitrina panorámica", "Acceso directo", "Medidor propio", "Porcelanato", "A/C instalado", "Baño propio", "Estacionamiento"],
+  2: ["Planta baja", "Vitrina panorámica", "Acceso directo", "Medidor propio", "Porcelanato", "A/C instalado", "Baño propio", "Estacionamiento"],
+  3: ["Porcelanato", "Baño privado", "A/C instalado", "Estacionamiento"],
   4: ["Ideal consultorio", "Iluminación LED", "Baño privado"],
   5: ["Doble frente", "Área de bodega", "Mayor metraje"],
 };

@@ -1,8 +1,8 @@
 import { PlazaInteractiveSection } from "@/app/catalog-explorer";
 import { Logo } from "@/components/logo";
 import { TechneticaCredit } from "@/components/technetica-credit";
-import { getPublicSpaces } from "@/lib/data";
 import { computeCatalogStats } from "@/lib/catalog";
+import { getPublicSpaces } from "@/lib/data";
 import type { Space } from "@/lib/types";
 import Link from "next/link";
 
@@ -243,7 +243,7 @@ export default async function HomePage() {
               Por qué elegir Plaza Aragón
             </h2>
             <p className="mt-2.5 max-w-3xl text-sm leading-relaxed text-piedra sm:text-base">
-              Plaza Aragón ofrece locales comerciales de alto estándar en el centro de Olanchito, Yoro, con contratos desde 6 hasta 12+ meses, cánones competitivos desde L. 8,000 mensuales, baño privado, medidor individual y portal digital para registrar comprobantes bancarios al instante.
+              Plaza Aragón ofrece locales comerciales de alto estándar en el centro de Olanchito, Yoro, con contratos desde 6 meses, alquileres muy competitivos desde L. 8,000 mensuales, baño privado, medidor individual y portal digital para registrar comprobantes bancarios al instante.
             </p>
 
             <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">

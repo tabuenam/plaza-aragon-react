@@ -48,7 +48,7 @@ export function PlazaInteractiveSection({
             </h1>
 
             <p className="mt-3 max-w-2xl text-base leading-relaxed text-crema/90 sm:text-lg">
-              Espacios modernos con baño privado, medidor eléctrico independiente y vitrina hacia la calle principal.
+              Espacios modernos con acceso peatonal y vehicular en el corazón de la ciudad cívica.
             </p>
           </div>
 
@@ -187,11 +187,10 @@ export function PlazaInteractiveSection({
               aria-controls="catalog-grid"
               data-testid="filter-tab-all"
               onClick={() => setFilter("all")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition duration-150 cursor-pointer ${
-                filter === "all"
-                  ? "bg-azul text-white shadow-2xs"
-                  : "text-piedra hover:bg-arena hover:text-tinta"
-              }`}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition duration-150 cursor-pointer ${filter === "all"
+                ? "bg-azul text-white shadow-2xs"
+                : "text-piedra hover:bg-arena hover:text-tinta"
+                }`}
             >
               Todos ({spaces.length})
             </button>
@@ -202,11 +201,10 @@ export function PlazaInteractiveSection({
               aria-controls="catalog-grid"
               data-testid="filter-tab-open"
               onClick={() => setFilter("open")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition duration-150 cursor-pointer ${
-                filter === "open"
-                  ? "bg-azul text-white shadow-2xs"
-                  : "text-piedra hover:bg-arena hover:text-tinta"
-              }`}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition duration-150 cursor-pointer ${filter === "open"
+                ? "bg-azul text-white shadow-2xs"
+                : "text-piedra hover:bg-arena hover:text-tinta"
+                }`}
             >
               Disponibles / Preventa ({openCount})
             </button>
@@ -217,11 +215,10 @@ export function PlazaInteractiveSection({
               aria-controls="catalog-grid"
               data-testid="filter-tab-occupied"
               onClick={() => setFilter("occupied")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition duration-150 cursor-pointer ${
-                filter === "occupied"
-                  ? "bg-azul text-white shadow-2xs"
-                  : "text-piedra hover:bg-arena hover:text-tinta"
-              }`}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition duration-150 cursor-pointer ${filter === "occupied"
+                ? "bg-azul text-white shadow-2xs"
+                : "text-piedra hover:bg-arena hover:text-tinta"
+                }`}
             >
               Ocupados ({occupiedCount})
             </button>
@@ -271,9 +268,8 @@ export function PlazaInteractiveSection({
                   data-testid={`space-card-${space.id}`}
                   key={space.id}
                   onClick={() => setHighlightedId(space.id)}
-                  className={`card flex flex-col justify-between transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                    isHighlighted ? "ring-2 ring-barro shadow-md" : ""
-                  }`}
+                  className={`card flex flex-col justify-between transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${isHighlighted ? "ring-2 ring-barro shadow-md" : ""
+                    }`}
                 >
                   <div>
                     <SpaceGallery
