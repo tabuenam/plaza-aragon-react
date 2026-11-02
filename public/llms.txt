@@ -1,18 +1,19 @@
 # Plaza Aragón
 
-> Plaza Aragón es un centro de locales comerciales modernos en renta ubicado en Olanchito, Yoro, Honduras. Diseñado para clínicas, bufetes profesionales, farmacias y comercios con contratos flexibles de 6 a 12+ meses y portal digital de gestión de pagos.
+> Plaza Aragón es un complejo de locales comerciales modernos de 70 m² en renta ubicado en Calle Principal (contiguo a Hotel Olanchito, a 120m del Parque Central), Olanchito, Yoro, Honduras. Diseñado para clínicas, farmacias, bufetes legales, franquicias y comercios con contratos flexibles de 6 a 12+ meses, lista de espera prioritaria activa y portal digital de pagos.
 
-## Catálogo y Servicios
+## Catálogo Comercial y Lista de Espera
 
-- [Catálogo de Locales Comerciales](https://plaza-aragon.com/): Disponibilidad en tiempo real, planos arquitectónicos y precios mensuales en Lempiras (HNL).
-- [Especificaciones y Servicios](https://plaza-aragon.com/#ventajas): Baño privado interno, medidor eléctrico independiente, vitrina comercial hacia la calle principal y aire acondicionado instalado.
-- [Preguntas Frecuentes de Arrendamiento](https://plaza-aragon.com/#preguntas): Plazos de contrato (6 a 12+ meses renovables), condiciones de preventa y depósito de garantía equivalente a 1 mes de renta.
+- [Locales Comerciales y Lista de Espera](https://plaza-aragon.com/#locales): Estado actual 2/2 locales operando con éxito (Local Pacura y Local Corozal, 70 m² a L. 8,000 HNL/mes) y registro en lista de espera prioritaria.
+- [Beneficios y Ventajas Comerciales](https://plaza-aragon.com/#beneficios): Ubicación prime en el centro de Olanchito, medidor eléctrico 100% independiente, baño privado interno, porcelanato, vitrina panorámica y A/C instalado.
+- [Ubicación y Ficha Técnica](https://plaza-aragon.com/#ubicacion): Coordenadas 15.4811, -86.5742, especificaciones constructivas por módulo de 70 m² y giros comerciales recomendados.
+- [Preguntas Frecuentes de Arrendamiento](https://plaza-aragon.com/#preguntas): Respuestas sobre plazos de contrato (6 a 12+ meses), depósito de garantía, estacionamiento, rótulos luminosos y apartado en preventa.
 
-## Portales y Contacto
+## Portales y Contacto Directo
 
-- [Portal de Inquilinos](https://plaza-aragon.com/ingresar): Plataforma digital para que arrendatarios suban comprobantes de pago de renta y revisen contratos vigentes.
-- [Contacto por WhatsApp](https://wa.me/50499999999): Atención directa para citas, visitas y reservación de módulos comerciales.
+- [Portal de Inquilinos](https://plaza-aragon.com/ingresar): Plataforma digital de autoservicio para que los arrendatarios suban comprobantes bancarios en 3 segundos y consulten su contrato e historial verificado.
+- [Contacto Oficial por WhatsApp](https://wa.me/50449151750): Atención directa al +504 4915-1750 (Lunes a Sábado de 08:00 a 18:00) para agendar visitas o unirse a la lista de espera.
 
 ## Contexto Completo
 
-- [Documentación Consolidada para LLMs](https://plaza-aragon.com/llms-full.txt): Especificaciones técnicas completas, medidas, tarifas y políticas para ingesta en un solo paso por modelos de lenguaje y agentes de IA.
+- [Documentación Consolidada para LLMs](https://plaza-aragon.com/llms-full.txt): Ficha técnica completa, tarifas en Lempiras (HNL), proceso de arrendamiento en 4 pasos y las 9 preguntas frecuentes para ingesta en un solo paso por motores de búsqueda generativos.

@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { computeCatalogStats, filterSpaces, getSpaceHighlights } from "../catalog.ts";
+import {
+  computeCatalogStats,
+  COROZAL_TAGS,
+  filterSpaces,
+  getSpaceCatalogTags,
+  getSpaceHighlights,
+  PACURA_TAGS,
+} from "../catalog.ts";
 import type { Space } from "../types.ts";
 
 /** Factory function for creating mock Space entities with sensible defaults. */
@@ -60,6 +67,13 @@ describe("catalog utilities", () => {
         "Alta visibilidad",
         "Medidor propio",
       ]);
+    });
+
+    it("returns commercial catalog tags for Pacura and Corozal modules", () => {
+      const pacura = getMockSpace({ name: "Pacura", sort_order: 1 });
+      const corozal = getMockSpace({ name: "Corozal", sort_order: 2 });
+      assert.deepEqual(getSpaceCatalogTags(pacura, 0), PACURA_TAGS);
+      assert.deepEqual(getSpaceCatalogTags(corozal, 1), COROZAL_TAGS);
     });
   });
 

@@ -4,6 +4,8 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import robots from "../../app/robots.ts";
 import sitemap from "../../app/sitemap.ts";
+import { buildStructuredData, computeCatalogStats, FAQS } from "../catalog.ts";
+import type { Space } from "../types.ts";
 
 describe("SEO and Generative Search Engine Configuration", () => {
   describe("Robots configuration", () => {
@@ -121,6 +123,48 @@ describe("SEO and Generative Search Engine Configuration", () => {
       assert.ok(content.includes("Olanchito, Yoro"));
       assert.ok(content.includes("HNL"));
       assert.ok(content.includes("FAQ") || content.includes("Preguntas"));
+    });
+  });
+
+  describe("JSON-LD Structured Data (buildStructuredData)", () => {
+    it("includes 9 FAQ questions, +504 4915-1750 telephone, and PreOrder waitlist availability", () => {
+      const mockSpaces: Space[] = [
+        {
+          id: "1",
+          name: "Pacura",
+          description: "Local Pacura 70 m²",
+          price: 8000,
+          status: "occupied",
+          image_urls: [],
+          sort_order: 1,
+        },
+        {
+          id: "2",
+          name: "Corozal",
+          description: "Local Corozal 70 m²",
+          price: 8000,
+          status: "occupied",
+          image_urls: [],
+          sort_order: 2,
+        },
+      ];
+      const stats = computeCatalogStats(mockSpaces);
+      const data = buildStructuredData(mockSpaces, stats, "https://plaza-aragon.com");
+
+      assert.equal(FAQS.length, 9);
+
+      const graph = data["@graph"];
+      const place = graph.find((node) => node["@type"] === "ShoppingCenter");
+      assert.ok(place && "telephone" in place && place.hasOfferCatalog);
+      assert.equal(place.telephone, "+504 4915-1750");
+
+      const offers = place.hasOfferCatalog.itemListElement;
+      assert.ok(offers.length >= 3);
+      assert.ok(offers.every((offer) => offer.availability === "https://schema.org/PreOrder"));
+
+      const faqNode = graph.find((node) => node["@type"] === "FAQPage");
+      assert.ok(faqNode && "mainEntity" in faqNode && faqNode.mainEntity);
+      assert.equal(faqNode.mainEntity.length, 9);
     });
   });
 });

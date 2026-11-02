@@ -9,7 +9,7 @@ const STATUS: Record<SpaceStatus | PaymentStatus, { label: string; className: st
   occupied: {
     label: "Ocupado",
     className: "bg-turquesa-claro/80 text-azul ring-1 ring-azul/15",
-    dotClass: "bg-azul",
+    dotClass: "bg-emerald-500 animate-pulse",
   },
   construction: {
     label: "En preventa · Obra",

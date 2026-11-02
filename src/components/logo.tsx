@@ -26,7 +26,7 @@ export function Logo({ light = false, subtitle = false }: { light?: boolean; sub
         </span>
         {subtitle && (
           <span
-            className={`mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] leading-none ${
+            className={`mt-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] sm:tracking-[0.16em] leading-none ${
               light ? "text-crema/75" : "text-piedra"
             }`}
           >
