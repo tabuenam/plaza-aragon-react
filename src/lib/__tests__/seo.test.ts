@@ -5,6 +5,8 @@ import { describe, it } from "node:test";
 import manifest from "../../app/manifest.ts";
 import robots from "../../app/robots.ts";
 import sitemap from "../../app/sitemap.ts";
+import { buildStructuredData, computeCatalogStats, FAQS } from "../catalog.ts";
+import type { Space } from "../types.ts";
 
 describe("SEO and Generative Search Engine Configuration", () => {
   describe("Robots configuration", () => {
@@ -125,20 +127,59 @@ describe("SEO and Generative Search Engine Configuration", () => {
     });
   });
 
+  describe("JSON-LD Structured Data (buildStructuredData)", () => {
+    it("includes 9 FAQ questions, +504 4915-1750 telephone, and PreOrder waitlist availability", () => {
+      const mockSpaces: Space[] = [
+        {
+          id: "1",
+          name: "Pacura",
+          description: "Local Pacura 70 m²",
+          price: 8000,
+          status: "occupied",
+          image_urls: [],
+          sort_order: 1,
+        },
+        {
+          id: "2",
+          name: "Corozal",
+          description: "Local Corozal 70 m²",
+          price: 8000,
+          status: "occupied",
+          image_urls: [],
+          sort_order: 2,
+        },
+      ];
+      const stats = computeCatalogStats(mockSpaces);
+      const data = buildStructuredData(mockSpaces, stats, "https://plaza-aragon.com");
+
+      assert.equal(FAQS.length, 9);
+
+      const graph = data["@graph"];
+      const place = graph.find((node) => node["@type"] === "ShoppingCenter");
+      assert.ok(place && "telephone" in place && place.hasOfferCatalog);
+      assert.equal(place.telephone, "+504 4915-1750");
+
+      const offers = place.hasOfferCatalog.itemListElement;
+      assert.ok(offers.length >= 3);
+      assert.ok(offers.every((offer) => offer.availability === "https://schema.org/PreOrder"));
+
+      const faqNode = graph.find((node) => node["@type"] === "FAQPage");
+      assert.ok(faqNode && "mainEntity" in faqNode && faqNode.mainEntity);
+      assert.equal(faqNode.mainEntity.length, 9);
+    });
+  });
+
   describe("Website Logo, Favicon & Web Manifest Assets", () => {
     it("provides a custom multi-resolution favicon.ico starting with 48x48 for Google Search", () => {
       const faviconPath = path.resolve(process.cwd(), "src/app/favicon.ico");
       assert.ok(fs.existsSync(faviconPath), "src/app/favicon.ico must exist");
 
       const buf = fs.readFileSync(faviconPath);
-      // Ensure it is not the default 15086-byte Next.js starter favicon
       assert.notEqual(buf.length, 15086, "favicon.ico must not be the default Next.js starter icon");
-      // ICO header: reserved = 0, type = 1 (ICO), count = 3
       assert.equal(buf.readUInt16LE(0), 0);
       assert.equal(buf.readUInt16LE(2), 1);
       assert.equal(buf.readUInt16LE(4), 3);
 
-      // First directory entry must be 48x48 (Google Search multiple of 48px requirement)
       assert.equal(buf.readUInt8(6), 48);
       assert.equal(buf.readUInt8(7), 48);
     });
@@ -154,7 +195,6 @@ describe("SEO and Generative Search Engine Configuration", () => {
         const full = path.resolve(process.cwd(), relPath);
         assert.ok(fs.existsSync(full), `${relPath} must exist`);
         const png = fs.readFileSync(full);
-        // PNG magic header + IHDR width/height at bytes 16..23
         assert.equal(png.readUInt32BE(0), 0x89504e47);
         assert.equal(png.readUInt32BE(16), expectedSize);
         assert.equal(png.readUInt32BE(20), expectedSize);

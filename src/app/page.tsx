@@ -1,19 +1,27 @@
 import { PlazaInteractiveSection } from "@/app/catalog-explorer";
 import { Logo } from "@/components/logo";
 import { TechneticaCredit } from "@/components/technetica-credit";
-import { computeCatalogStats } from "@/lib/catalog";
+import {
+  buildStructuredData,
+  computeCatalogStats,
+  FAQS,
+  OFFICIAL_PHONE_DISPLAY,
+  OFFICIAL_WHATSAPP_DIGITS,
+} from "@/lib/catalog";
 import { getPublicSpaces } from "@/lib/data";
 import type { Space } from "@/lib/types";
 import Link from "next/link";
+
+export { buildStructuredData, FAQS };
 
 export const instant = false;
 
 const fallbackSpaces: Space[] = [
   {
     id: "1",
-    name: "Local 1",
+    name: "Local Pacura",
     description:
-      "Espacio comercial en planta baja con acceso directo a la calle principal, vitrina panorámica e iluminación natural.",
+      "Establece tu presencia en el centro de la ciudad cívica. Exclusivo módulo esquinero de 70 m² en planta baja con vitrina panorámica hacia la Calle Principal, contiguo a Hotel Olanchito y a 120m del Parque Central.",
     price: 8000,
     status: "occupied",
     image_urls: [],
@@ -21,292 +29,518 @@ const fallbackSpaces: Space[] = [
   },
   {
     id: "2",
-    name: "Local 2",
+    name: "Local Corozal",
     description:
-      "Espacio comercial esquinero de alta visibilidad, ideal para farmacia, óptica o tienda de conveniencia.",
+      "Módulo comercial central frontal de 70 m² en planta baja con acceso directo a pie de calle, vitrina panorámica de vidrio templado, piso de porcelanato, baño privado y medidor eléctrico independiente.",
     price: 8000,
     status: "occupied",
     image_urls: [],
     sort_order: 2,
   },
-  {
-    id: "3",
-    name: "Local 3",
-    description:
-      "Local comercial de nueva construcción con piso de porcelanato, baño privado y aire acondicionado instalado.",
-    price: 8500,
-    status: "construction",
-    image_urls: [],
-    sort_order: 3,
-  },
-  {
-    id: "4",
-    name: "Local 4",
-    description:
-      "Espacio amplio diseñado para consultorio, bufete o atención al cliente en el corazón de Olanchito.",
-    price: 8500,
-    status: "construction",
-    image_urls: [],
-    sort_order: 4,
-  },
-  {
-    id: "5",
-    name: "Local 5",
-    description:
-      "Espacio premium con doble frente y área para almacenaje o bodega interna.",
-    price: 9000,
-    status: "construction",
-    image_urls: [],
-    sort_order: 5,
-  },
 ];
 
-const FAQS = [
-  {
-    q: "¿Cuál es la duración mínima y máxima de los contratos de arrendamiento?",
-    a: "Ofrecemos contratos flexibles de 6 a 12+ meses renovables, adaptados tanto a negocios consolidados en Olanchito como a nuevos proyectos comerciales o sucursales.",
-  },
-  {
-    q: "¿Qué servicios incluye cada local comercial?",
-    a: "Cada módulo cuenta con baño privado interno, instalaciones eléctricas independientes (medidor propio), acabados en porcelanato, vitrina frontal hacia la vía pública y aire acondicionado instalado.",
-  },
-  {
-    q: "¿Cómo funciona el apartado en preventa de los locales en construcción?",
-    a: "Los locales en etapa de obra pueden reservarse con condiciones preferenciales. Además, si aparta en preventa podemos coordinar ajustes menores de distribución o acabados según el giro de su negocio.",
-  },
-  {
-    q: "¿Cómo se realizan y registran los pagos mensuales de renta?",
-    a: "Cada inquilino recibe una cuenta de acceso al Portal Digital de Plaza Aragón. Desde su teléfono móvil puede tomar una foto al comprobante de transferencia bancaria, subirlo en segundos y consultar su historial verificado y su contrato vigente.",
-  },
-  {
-    q: "¿De cuánto es el depósito de garantía y cómo se devuelve?",
-    a: "El depósito de garantía equivale a un mes de renta. Este valor se reintegra al finalizar el contrato una vez desocupado el local, verificando que se entregue en las mismas buenas condiciones en las que fue recibido.",
-  },
+const TECHNICAL_SPECS = [
+  { label: "Área útil", value: "70 m² por módulo" },
+  { label: "Frente comercial", value: "~7 metros de vitrina frontal" },
+  { label: "Altura libre", value: "3.00 metros" },
+  { label: "Suministro eléctrico", value: "110V / 220V con medidor individual" },
+  { label: "Suministro de agua", value: "Conexión y cisterna independiente" },
+  { label: "Internet/Telecom", value: "Disponibilidad de fibra óptica local" },
+  { label: "Estacionamiento", value: "Área asignada frontal y para clientes" },
+  { label: "Acceso", value: "Horario comercial amplio lunes a sábado" },
 ];
 
-function buildStructuredData(
-  spaces: Space[],
-  stats: ReturnType<typeof computeCatalogStats>,
-  baseUrl: string,
-  whatsapp: string
-) {
-  const rawDigits = whatsapp.replace(/\D/g, "");
-  const cleanPhone = rawDigits.length >= 8 ? rawDigits : "50499999999";
-  const formattedPhone = cleanPhone.startsWith("504") ? `+${cleanPhone}` : `+504${cleanPhone}`;
-  const priceDisplay =
-    stats.minPrice > 0 && stats.maxPrice > 0
-      ? `L. ${stats.minPrice.toLocaleString("es-HN")} - L. ${stats.maxPrice.toLocaleString("es-HN")} HNL`
-      : "L. 8,000 - L. 9,000 HNL";
+const RECOMMENDED_SECTORS = [
+  "Farmacias",
+  "Clínicas y Consultorios",
+  "Bufetes Legales",
+  "Boutiques",
+  "Cafeterías",
+  "Servicios Financieros",
+  "Tiendas de Tecnología",
+];
 
-  return {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "ShoppingCenter",
-        "@id": `${baseUrl}/#place`,
-        name: "Plaza Aragón",
-        alternateName: "Plaza Comercial Aragón",
-        description:
-          "Locales comerciales en renta en Olanchito, Yoro, Honduras. Módulos con baño privado, medidor independiente y contratos flexibles de 6 a 12+ meses.",
-        url: baseUrl,
-        telephone: formattedPhone,
-        image: `${baseUrl}/opengraph-image`,
-        logo: {
-          "@type": "ImageObject",
-          "@id": `${baseUrl}/#logo`,
-          url: `${baseUrl}/logo.png`,
-          contentUrl: `${baseUrl}/logo.png`,
-          width: 512,
-          height: 512,
-          caption: "Plaza Aragón",
-        },
-        priceRange: priceDisplay,
-        currenciesAccepted: "HNL",
-        paymentAccepted: "Transferencia bancaria, depósito",
-        address: {
-          "@type": "PostalAddress",
-          streetAddress: "Calle Principal",
-          addressLocality: "Olanchito",
-          addressRegion: "Yoro",
-          addressCountry: "HN",
-        },
-        geo: {
-          "@type": "GeoCoordinates",
-          latitude: 15.4811,
-          longitude: -86.5742,
-        },
-        openingHoursSpecification: [
-          {
-            "@type": "OpeningHoursSpecification",
-            dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-            opens: "08:00",
-            closes: "18:00",
-          },
-        ],
-        amenityFeature: [
-          { "@type": "LocationFeatureSpecification", name: "Baño privado interno", value: true },
-          { "@type": "LocationFeatureSpecification", name: "Medidor eléctrico independiente", value: true },
-          { "@type": "LocationFeatureSpecification", name: "Aire acondicionado instalado", value: true },
-          { "@type": "LocationFeatureSpecification", name: "Piso de porcelanato", value: true },
-          { "@type": "LocationFeatureSpecification", name: "Vitrina comercial frontal", value: true },
-        ],
-        hasOfferCatalog: {
-          "@type": "OfferCatalog",
-          name: "Catálogo de Locales Comerciales",
-          itemListElement: spaces.map((space) => ({
-            "@type": "Offer",
-            name: space.name,
-            description: space.description,
-            price: space.price,
-            priceCurrency: "HNL",
-            availability:
-              space.status === "available"
-                ? "https://schema.org/InStock"
-                : space.status === "construction"
-                  ? "https://schema.org/PreOrder"
-                  : "https://schema.org/SoldOut",
-            url: `${baseUrl}/#locales`,
-          })),
-        },
-      },
-      {
-        "@type": "WebSite",
-        "@id": `${baseUrl}/#website`,
-        name: "Plaza Aragón",
-        url: baseUrl,
-        inLanguage: "es-HN",
-        publisher: {
-          "@id": `${baseUrl}/#place`,
-        },
-      },
-      {
-        "@type": "FAQPage",
-        "@id": `${baseUrl}/#faq`,
-        mainEntity: FAQS.map((faq) => ({
-          "@type": "Question",
-          name: faq.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: faq.a,
-          },
-        })),
-      },
-    ],
-  };
-}
+const LEASE_STEPS = [
+  {
+    step: "Paso 01",
+    title: "Registro o Contacto",
+    description: "Únete a la lista de espera o coordina una visita por WhatsApp.",
+  },
+  {
+    step: "Paso 02",
+    title: "Reserva y Depósito",
+    description: "Reserva del módulo con depósito de garantía de 1 mes.",
+  },
+  {
+    step: "Paso 03",
+    title: "Firma de Contrato",
+    description: "Formalización del contrato de arrendamiento (6 a 12+ meses).",
+  },
+  {
+    step: "Paso 04",
+    title: "Llaves y Acceso Digital",
+    description: "Entrega inmediata del local y credenciales de acceso al Portal de Inquilinos.",
+  },
+];
 
 export default async function HomePage() {
   "use cache";
   const fetchedSpaces = await getPublicSpaces();
   const spaces = fetchedSpaces.length > 0 ? fetchedSpaces : fallbackSpaces;
   const stats = computeCatalogStats(spaces);
-  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "50499999999";
+  const whatsapp = OFFICIAL_WHATSAPP_DIGITS;
+  const whatsappWaitlistUrl = `https://wa.me/${whatsapp}?text=${encodeURIComponent(
+    "Hola, quiero información sobre la lista de espera en Plaza Aragón"
+  )}`;
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://plaza-aragon.com").trim().replace(/\/+$/, "");
-  const structuredData = buildStructuredData(spaces, stats, baseUrl, whatsapp);
+  const structuredData = buildStructuredData(spaces, stats, baseUrl);
 
   return (
     <div className="flex min-h-dvh flex-col bg-arena selection:bg-turquesa-claro selection:text-azul">
-      {/* Schema.org Structured Data (JSON-LD) for Rich Snippets & LLM Search */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      {/* ───────────── STICKY HEADER (CLEAN & QUIET) ───────────── */}
       <header className="sticky top-0 z-30 border-b border-crema/90 bg-arena/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <Link href="/" className="inline-block">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-3 lg:px-8">
+          <Link href="/" className="inline-block shrink-0">
             <Logo subtitle />
           </Link>
 
-          <nav aria-label="Secciones principales" className="hidden items-center gap-7 md:flex">
+          <nav aria-label="Navegación principal" className="hidden items-center gap-7 lg:flex">
             <a href="#locales" className="text-sm font-semibold text-tinta transition hover:text-azul">
               Locales
             </a>
-            <a href="#ventajas" className="text-sm font-semibold text-tinta transition hover:text-azul">
-              Qué incluye
+            <a href="#beneficios" className="text-sm font-semibold text-tinta transition hover:text-azul">
+              Ventajas
+            </a>
+            <a href="#ubicacion" className="text-sm font-semibold text-tinta transition hover:text-azul">
+              Ubicación y Ficha
             </a>
             <a href="#preguntas" className="text-sm font-semibold text-tinta transition hover:text-azul">
-              Preguntas
+              FAQ
             </a>
           </nav>
 
-          <Link
-            href="/ingresar"
-            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-azul px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-azul-oscuro active:scale-95 sm:text-sm"
-          >
-            Portal de Inquilinos
-          </Link>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <Link
+              href="/ingresar"
+              className="hidden min-h-10 items-center justify-center rounded-xl border border-crema bg-white px-3.5 py-2 text-xs font-bold text-tinta transition hover:border-azul/30 hover:text-azul sm:inline-flex sm:text-sm"
+            >
+              Portal de Inquilinos
+            </Link>
+
+            <a
+              href={whatsappWaitlistUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="header-whatsapp-cta"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-2 text-xs font-extrabold text-azul-oscuro shadow-2xs transition hover:bg-[#1fe05f] active:scale-95 sm:gap-2 sm:px-4 sm:text-sm"
+            >
+              <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.492 5.451 5.587-1.466c1.911 1.258 4.195 1.982 6.621 1.982 6.627 0 12-5.373 12-12s-5.373-12-12-12z" />
+              </svg>
+              <span>WhatsApp</span>
+            </a>
+
+            <details className="relative lg:hidden">
+              <summary
+                aria-label="Abrir menú de navegación"
+                className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-xl border border-crema bg-white text-tinta transition hover:bg-arena [&::-webkit-details-marker]:hidden"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </summary>
+              <nav
+                aria-label="Menú móvil"
+                className="absolute right-0 mt-2 w-60 rounded-2xl border border-crema bg-white p-3 shadow-xl ring-1 ring-tinta/5"
+              >
+                <ul className="space-y-1 text-sm font-semibold text-tinta">
+                  <li>
+                    <a href="#locales" className="block rounded-xl px-3 py-2.5 hover:bg-arena hover:text-azul">
+                      Locales
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#beneficios" className="block rounded-xl px-3 py-2.5 hover:bg-arena hover:text-azul">
+                      Ventajas
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#ubicacion" className="block rounded-xl px-3 py-2.5 hover:bg-arena hover:text-azul">
+                      Ubicación y Ficha
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#preguntas" className="block rounded-xl px-3 py-2.5 hover:bg-arena hover:text-azul">
+                      FAQ
+                    </a>
+                  </li>
+                  <li className="border-t border-crema pt-1.5">
+                    <Link
+                      href="/ingresar"
+                      className="block rounded-xl bg-arena px-3 py-2.5 font-bold text-azul hover:bg-crema/60"
+                    >
+                      Portal de Inquilinos →
+                    </Link>
+                  </li>
+                </ul>
+              </nav>
+            </details>
+          </div>
         </div>
       </header>
 
       <main className="flex-1">
-        {/* ───────────── HERO + INTERACTIVE CATALOG ───────────── */}
         <PlazaInteractiveSection spaces={spaces} whatsapp={whatsapp} />
 
-        {/* ───────────── COMPACT 3-COLUMN BENEFITS STRIP ───────────── */}
-        <section id="ventajas" className="defer-section border-y border-crema bg-white py-12 sm:py-16">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h2 className="font-display text-2xl font-bold text-azul sm:text-3xl">
-              Por qué elegir Plaza Aragón
+        <section id="beneficios" className="defer-section scroll-mt-16 border-y border-crema bg-white py-12 sm:py-16">
+          <div id="ventajas" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <span className="eyebrow">Ventajas Competitivas</span>
+            <h2 className="section-fluid-title mt-2 font-display font-bold text-azul">
+              Beneficios y ventajas comerciales
             </h2>
             <p className="mt-2.5 max-w-3xl text-sm leading-relaxed text-piedra sm:text-base">
-              Plaza Aragón ofrece locales comerciales de alto estándar en el centro de Olanchito, Yoro, con contratos desde 6 meses, alquileres muy competitivos desde L. 8,000 mensuales, baño privado, medidor individual y portal digital para registrar comprobantes bancarios al instante.
+              Infraestructura moderna pensada para comerciantes, médicos, abogados, franquicias y emprendedores que buscan prestigio y control total de sus costos operativos en Olanchito.
             </p>
 
-            <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5 transition duration-200 hover:border-azul/30 hover:bg-arena/70 hover:shadow-xs">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-azul font-display text-sm font-bold text-white">
-                  01
-                </span>
+            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-6 transition duration-200 hover:border-azul/30 hover:bg-arena/70 hover:shadow-xs">
+                <div
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-azul text-white shadow-2xs"
+                  aria-hidden="true"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
                 <h3 className="mt-4 font-display text-lg font-bold text-tinta">
-                  Ubicación céntrica en Olanchito
+                  Ubicación Prime
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-piedra">
-                  Frente comercial directo con alto flujo vehicular y peatonal, ideal para comercio, clínica u oficina.
+                  En el corazón de Olanchito, a 30m del Hotel Olanchito y a 120m del Parque Central.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5 transition duration-200 hover:border-barro/30 hover:bg-arena/70 hover:shadow-xs">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-barro font-display text-sm font-bold text-white">
-                  02
-                </span>
+              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-6 transition duration-200 hover:border-barro/30 hover:bg-arena/70 hover:shadow-xs">
+                <div
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-barro text-white shadow-2xs"
+                  aria-hidden="true"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
                 <h3 className="mt-4 font-display text-lg font-bold text-tinta">
-                  Servicios independientes
+                  Servicios 100% Independientes
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-piedra">
-                  Cada local cuenta con medidor eléctrico propio, baño privado interno y acabados en porcelanato.
+                  Medidor eléctrico individual y baño privado interno por local; paga solo lo que consume.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-5 transition duration-200 hover:border-turquesa/30 hover:bg-arena/70 hover:shadow-xs">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-turquesa font-display text-sm font-bold text-white">
-                  03
-                </span>
+              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-6 transition duration-200 hover:border-selva/30 hover:bg-arena/70 hover:shadow-xs">
+                <div
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-selva text-white shadow-2xs"
+                  aria-hidden="true"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
                 <h3 className="mt-4 font-display text-lg font-bold text-tinta">
-                  Portal digital de pagos
+                  Seguridad y Confianza
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-piedra">
-                  Suba su comprobante bancario desde el teléfono móvil y consulte su contrato e historial en línea.
+                  Preparación para CCTV, cerramiento nocturno seguro e iluminación perimetral.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-6 transition duration-200 hover:border-maiz/40 hover:bg-arena/70 hover:shadow-xs">
+                <div
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-maiz text-azul-oscuro shadow-2xs"
+                  aria-hidden="true"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                </div>
+                <h3 className="mt-4 font-display text-lg font-bold text-tinta">
+                  Acabados de Primera
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-piedra">
+                  Pisos de porcelanato de alto tráfico, vitrina de vidrio templado y aire acondicionado instalado.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-6 transition duration-200 hover:border-azul/30 hover:bg-arena/70 hover:shadow-xs">
+                <div
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-azul-oscuro text-white shadow-2xs"
+                  aria-hidden="true"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="mt-4 font-display text-lg font-bold text-tinta">
+                  Arrendamiento Flexible
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-piedra">
+                  Contratos claros de 6 a 12+ meses renovables con condiciones transparentes.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-crema/80 bg-arena/40 p-6 transition duration-200 hover:border-turquesa/30 hover:bg-arena/70 hover:shadow-xs">
+                <div
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-turquesa text-white shadow-2xs"
+                  aria-hidden="true"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="mt-4 font-display text-lg font-bold text-tinta">
+                  Portal Digital Integrado
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-piedra">
+                  Comprobantes de pago bancario reportados desde el teléfono en segundos con historial verificado.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ───────────── FAQ ACCORDION ───────────── */}
-        <section id="preguntas" className="defer-section mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-          <h2 className="font-display text-2xl font-bold text-azul sm:text-3xl">
-            Preguntas frecuentes
-          </h2>
+        <section id="ubicacion" className="defer-section scroll-mt-16 mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+          <div className="max-w-3xl">
+            <span className="eyebrow">Punto Estratégico en Yoro</span>
+            <h2 className="section-fluid-title mt-2 font-display font-bold text-azul">
+              Ubicación en mapa y ficha técnica
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-piedra sm:text-base">
+              Situada sobre la Calle Principal de Olanchito, en el corredor comercial de mayor plusvalía y tránsito peatonal de la ciudad.
+            </p>
+          </div>
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="card flex flex-col justify-between">
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-display text-xl font-bold text-tinta">
+                      Centro de Olanchito, Yoro
+                    </h3>
+                    <p className="text-xs font-medium text-piedra">
+                      Calle Principal • Coordenadas: 15.4811° N, -86.5742° O
+                    </p>
+                  </div>
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=15.4811,-86.5742"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-azul/10 px-3 py-1.5 text-xs font-bold text-azul transition hover:bg-azul hover:text-white"
+                  >
+                    <span>Abrir en Google Maps</span>
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+
+                <div
+                  role="img"
+                  aria-label="Mapa esquemático de ubicación de Plaza Aragón en Calle Principal de Olanchito, a 30 metros de Hotel Olanchito y 120 metros del Parque Central"
+                  className="relative mt-4 overflow-hidden rounded-2xl border border-crema bg-arena p-4 blueprint-grid"
+                >
+                  <svg viewBox="0 0 520 280" className="h-auto w-full" aria-hidden="true">
+                    <rect width="520" height="280" rx="14" fill="#f8f4ec" />
+                    <path d="M0 70 H520 M0 210 H520 M130 0 V280 M390 0 V280" stroke="#e5dac7" strokeWidth="10" />
+                    <path d="M0 140 H520" stroke="#ffffff" strokeWidth="26" />
+                    <path d="M0 140 H520" stroke="#df9b1a" strokeWidth="2" strokeDasharray="8 8" />
+                    <text x="235" y="133" fill="#52606d" fontSize="10" fontWeight="700" letterSpacing="1">
+                      CALLE PRINCIPAL DE OLANCHITO
+                    </text>
+
+                    <g transform="translate(332, 36)">
+                      <rect x="0" y="0" width="154" height="68" rx="10" fill="#d7eee2" stroke="#1f5e43" strokeWidth="1.75" />
+                      <circle cx="22" cy="34" r="9" fill="#1f5e43" />
+                      <text x="38" y="30" fill="#1f5e43" fontSize="11" fontWeight="800">
+                        Parque Central
+                      </text>
+                      <text x="38" y="45" fill="#1f5e43" fontSize="9.5" fontWeight="600">
+                        de Olanchito (a 120 m)
+                      </text>
+                    </g>
+
+                    <g transform="translate(210, 165)">
+                      <rect x="0" y="0" width="128" height="58" rx="10" fill="#daf0f5" stroke="#1693ad" strokeWidth="1.75" />
+                      <circle cx="20" cy="29" r="8" fill="#1693ad" />
+                      <text x="34" y="26" fill="#0b3d66" fontSize="11" fontWeight="800">
+                        Hotel Olanchito
+                      </text>
+                      <text x="34" y="40" fill="#52606d" fontSize="9.5" fontWeight="600">
+                        Contiguo (a 30 m)
+                      </text>
+                    </g>
+
+                    <g transform="translate(55, 88)">
+                      <circle cx="65" cy="52" r="26" fill="#b84a24" fillOpacity="0.16" />
+                      <rect x="0" y="0" width="142" height="64" rx="12" fill="#0b3d66" stroke="#df9b1a" strokeWidth="2.5" />
+                      <circle cx="22" cy="32" r="9" fill="#b84a24" stroke="#ffffff" strokeWidth="2" />
+                      <text x="38" y="27" fill="#ffffff" fontSize="12" fontWeight="800">
+                        PLAZA ARAGÓN
+                      </text>
+                      <text x="38" y="42" fill="#fdf0cf" fontSize="9.5" fontWeight="700">
+                        Pacura • Corozal
+                      </text>
+                    </g>
+
+                    <path d="M197 125 L220 165" stroke="#b84a24" strokeWidth="2" strokeDasharray="4 4" />
+                    <path d="M197 110 L350 78" stroke="#1f5e43" strokeWidth="2" strokeDasharray="4 4" />
+                  </svg>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-barro">
+                      Ubicación central
+                    </span>
+                    <p className="mt-1 font-display text-sm font-bold text-tinta">
+                      Plaza Aragón
+                    </p>
+                    <p className="text-xs text-piedra">Calle Principal, Planta Baja</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-turquesa">
+                      A 30 metros
+                    </span>
+                    <p className="mt-1 font-display text-sm font-bold text-tinta">
+                      Hotel Olanchito
+                    </p>
+                    <p className="text-xs text-piedra">Referencia inmediata contigua</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-selva">
+                      A 120 metros
+                    </span>
+                    <p className="mt-1 font-display text-sm font-bold text-tinta">
+                      Parque Central
+                    </p>
+                    <p className="text-xs text-piedra">2 minutos caminando</p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-5 border-t border-crema/80 pt-4 text-xs leading-relaxed text-piedra">
+                Dirección exacta: <strong>Calle Principal, contiguo a Hotel Olanchito, a 120m del Parque Central, Olanchito, Yoro, Honduras.</strong>
+              </p>
+            </div>
+
+            <div className="card flex flex-col justify-between">
+              <div>
+                <h3 className="font-display text-xl font-bold text-tinta">
+                  Ficha técnica por módulo
+                </h3>
+                <p className="mt-1 text-xs text-piedra sm:text-sm">
+                  Especificaciones constructivas estándar en los locales de Plaza Aragón.
+                </p>
+
+                <dl className="mt-5 divide-y divide-crema/80 rounded-2xl border border-crema bg-arena/50 px-4">
+                  {TECHNICAL_SPECS.map((spec) => (
+                    <div
+                      key={spec.label}
+                      className="flex flex-col justify-between gap-1 py-3 sm:flex-row sm:items-center sm:gap-4"
+                    >
+                      <dt className="text-xs font-bold uppercase tracking-wide text-piedra">
+                        {spec.label}
+                      </dt>
+                      <dd className="text-sm font-bold text-tinta sm:text-right">
+                        {spec.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              <div className="mt-6 border-t border-crema/80 pt-5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-azul">
+                  Giro comercial recomendado
+                </h4>
+                <ul className="mt-3 flex flex-wrap gap-2" aria-label="Giros comerciales recomendados">
+                  {RECOMMENDED_SECTORS.map((sector) => (
+                    <li
+                      key={sector}
+                      className="rounded-full bg-turquesa-claro/70 px-3.5 py-1.5 text-xs font-bold text-azul ring-1 ring-azul/15"
+                    >
+                      {sector}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="defer-section border-y border-crema bg-white py-12 sm:py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <span className="eyebrow">Trámite Ágil y Transparente</span>
+              <h2 className="section-fluid-title mt-2 font-display font-bold text-azul">
+                Proceso de arrendamiento en 4 pasos
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-piedra sm:text-base">
+                Sin burocracia innecesaria: desde el primer contacto hasta la entrega de llaves y activación de tu Portal de Inquilinos.
+              </p>
+            </div>
+
+            <ol className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-4">
+              {LEASE_STEPS.map((item, index) => (
+                <li
+                  key={item.step}
+                  className="relative flex flex-col justify-between rounded-2xl border border-crema bg-arena/50 p-5"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center rounded-xl bg-azul px-3 py-1 font-display text-xs font-bold text-white">
+                        {item.step}
+                      </span>
+                      <span className="font-mono text-xs font-bold text-piedra/70" aria-hidden="true">
+                        0{index + 1}/04
+                      </span>
+                    </div>
+                    <h3 className="mt-4 font-display text-lg font-bold text-tinta">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-piedra">
+                      {item.description}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section id="preguntas" className="defer-section scroll-mt-16 mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+          <div className="text-center">
+            <span className="eyebrow">Resolvemos tus dudas</span>
+            <h2 className="section-fluid-title mt-2 font-display font-bold text-azul">
+              Preguntas frecuentes
+            </h2>
+            <p className="mx-auto mt-2 max-w-2xl text-sm text-piedra sm:text-base">
+              Todo lo que necesitas saber sobre contratos, servicios independientes, lista de espera y operación en Plaza Aragón.
+            </p>
+          </div>
+
+          <div className="mt-8 space-y-3">
             {FAQS.map((item, idx) => (
               <details
                 key={idx}
                 name="faq-plaza"
                 open={idx === 0}
-                className="group rounded-2xl border border-crema bg-white px-5 py-4 transition open:border-azul/30"
+                className="group rounded-2xl border border-crema bg-white px-5 py-4 transition open:border-azul/30 open:shadow-xs"
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-base font-bold text-tinta transition hover:text-azul [&::-webkit-details-marker]:hidden">
                   <span>{item.q}</span>
@@ -324,36 +558,258 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
+
+        <section className="defer-section border-t border-crema bg-gradient-to-b from-azul-oscuro to-azul py-12 text-white sm:py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
+              <div className="lg:col-span-7">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-maiz-claro ring-1 ring-white/15">
+                  Tecnología para Arrendatarios
+                </span>
+                <h2 className="section-fluid-title mt-3 font-display font-bold text-white">
+                  Portal de Inquilinos y Atención Directa
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-crema/90 sm:text-base">
+                  Olvídate del papeleo físico. Nuestros arrendatarios gestionan sus pagos mensuales y consultan su contrato desde cualquier teléfono móvil:
+                </p>
+
+                <ol className="mt-6 space-y-3.5">
+                  <li className="flex items-start gap-3.5 rounded-2xl border border-white/15 bg-white/10 p-4">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-maiz font-display text-sm font-black text-azul-oscuro">
+                      1
+                    </span>
+                    <div>
+                      <h3 className="font-display text-base font-bold text-white">
+                        Fotografía al comprobante de transferencia bancaria desde el móvil
+                      </h3>
+                      <p className="mt-0.5 text-xs text-crema/85 sm:text-sm">
+                        Realiza tu transferencia en Lempiras y captura el recibo desde la cámara de tu celular.
+                      </p>
+                    </div>
+                  </li>
+
+                  <li className="flex items-start gap-3.5 rounded-2xl border border-white/15 bg-white/10 p-4">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-turquesa font-display text-sm font-black text-white">
+                      2
+                    </span>
+                    <div>
+                      <h3 className="font-display text-base font-bold text-white">
+                        Carga en 3 segundos a la plataforma
+                      </h3>
+                      <p className="mt-0.5 text-xs text-crema/85 sm:text-sm">
+                        Compresión inteligente automática incluso con señal móvil moderada.
+                      </p>
+                    </div>
+                  </li>
+
+                  <li className="flex items-start gap-3.5 rounded-2xl border border-white/15 bg-white/10 p-4">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-selva font-display text-sm font-black text-white">
+                      3
+                    </span>
+                    <div>
+                      <h3 className="font-display text-base font-bold text-white">
+                        Estado de cuenta verificado y contrato digital siempre a la mano
+                      </h3>
+                      <p className="mt-0.5 text-xs text-crema/85 sm:text-sm">
+                        Historial auditable de pagos mensuales y descarga de documentos firmados 24/7.
+                      </p>
+                    </div>
+                  </li>
+                </ol>
+
+                <div className="mt-7 flex flex-wrap items-center gap-3.5">
+                  <Link
+                    href="/ingresar"
+                    className="btn bg-white text-azul-oscuro shadow-md hover:bg-crema"
+                  >
+                    Ingresar al Portal de Inquilinos →
+                  </Link>
+                  <a
+                    href={whatsappWaitlistUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-accent"
+                  >
+                    Contactar Administración por WhatsApp
+                  </a>
+                </div>
+              </div>
+
+              <div className="lg:col-span-5">
+                <div className="mx-auto max-w-sm rounded-[2rem] border-4 border-white/20 bg-arena p-5 text-tinta shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-crema pb-3">
+                    <Logo />
+                    <span className="rounded-full bg-selva-claro px-2.5 py-0.5 text-[11px] font-bold text-selva">
+                      Portal Activo
+                    </span>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-crema">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-piedra">
+                        Arrendamiento Vigente
+                      </span>
+                      <span className="rounded-full bg-selva-claro px-2.5 py-0.5 text-[10px] font-bold uppercase text-selva">
+                        Verificado
+                      </span>
+                    </div>
+                    <p className="mt-1 font-display text-lg font-bold text-azul">
+                      Local Pacura • 70 m²
+                    </p>
+                    <p className="text-xs text-piedra">Canon mensual: L. 8,000.00 HNL</p>
+
+                    <div className="mt-3 flex items-center justify-between rounded-xl bg-arena px-3 py-2 text-xs">
+                      <span className="font-semibold text-tinta">Comprobante Noviembre 2026</span>
+                      <span className="font-bold text-selva">✓ Subido (3s)</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl bg-azul-oscuro p-4 text-white">
+                    <h3 className="font-display text-sm font-bold text-maiz-claro">
+                      Contacto Directo Administración
+                    </h3>
+                    <dl className="mt-2.5 space-y-2 text-xs text-crema/95">
+                      <div>
+                        <dt className="font-bold text-white">Dirección:</dt>
+                        <dd>Plaza Aragón, Calle Principal, Olanchito, Yoro, Honduras.</dd>
+                      </div>
+                      <div>
+                        <dt className="font-bold text-white">Teléfono / WhatsApp:</dt>
+                        <dd>
+                          <a
+                            href={whatsappWaitlistUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-maiz-claro underline hover:text-white"
+                          >
+                            {OFFICIAL_PHONE_DISPLAY}
+                          </a>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-bold text-white">Horario de atención:</dt>
+                        <dd>Lunes a Sábado de 08:00 a 18:00</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* ───────────── FOOTER ───────────── */}
       <footer className="border-t border-crema bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-            <Logo subtitle />
-            <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-piedra">
-              <a
-                href={`https://wa.me/${whatsapp}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-azul hover:underline"
-              >
-                WhatsApp
-              </a>
-              <span>·</span>
-              <Link href="/ingresar" className="text-azul hover:underline">
-                Portal de Inquilinos →
-              </Link>
-              <span>·</span>
-              <span>© {new Date().getFullYear()} Plaza Aragón</span>
-              <span>·</span>
-              <TechneticaCredit />
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <Logo subtitle />
+              <p className="mt-3 max-w-md text-xs leading-relaxed text-piedra sm:text-sm">
+                Locales comerciales modernos de 70 m² en el centro de Olanchito, Yoro, Honduras. Contiguo a Hotel Olanchito, a 120m del Parque Central.
+              </p>
+              <p className="mt-2 text-xs font-bold text-tinta">
+                WhatsApp Oficial:{" "}
+                <a
+                  href={whatsappWaitlistUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-azul hover:underline"
+                >
+                  {OFFICIAL_PHONE_DISPLAY}
+                </a>
+              </p>
             </div>
+
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-tinta">
+                Navegación Rápida
+              </h3>
+              <ul className="mt-3 space-y-2 text-xs font-semibold text-piedra sm:text-sm">
+                <li>
+                  <a href="#locales" className="hover:text-azul hover:underline">
+                    Locales y Lista de Espera
+                  </a>
+                </li>
+                <li>
+                  <a href="#beneficios" className="hover:text-azul hover:underline">
+                    Ventajas Comerciales
+                  </a>
+                </li>
+                <li>
+                  <a href="#ubicacion" className="hover:text-azul hover:underline">
+                    Ubicación y Ficha Técnica
+                  </a>
+                </li>
+                <li>
+                  <a href="#preguntas" className="hover:text-azul hover:underline">
+                    Preguntas Frecuentes (FAQ)
+                  </a>
+                </li>
+                <li>
+                  <Link href="/ingresar" className="font-bold text-azul hover:underline">
+                    Portal de Inquilinos →
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-tinta">
+                Información Legal
+              </h3>
+              <div className="mt-3 space-y-2 text-xs text-piedra">
+                <details className="group">
+                  <summary className="cursor-pointer font-semibold hover:text-azul">
+                    Términos de arrendamiento
+                  </summary>
+                  <p className="mt-1 rounded-xl bg-arena p-2.5 text-[11px] leading-relaxed text-tinta">
+                    Contratos comerciales de 6 a 12+ meses renovables, canon en Lempiras (HNL), depósito de garantía de 1 mes y servicios eléctricos independientes por medidor.
+                  </p>
+                </details>
+
+                <details className="group">
+                  <summary className="cursor-pointer font-semibold hover:text-azul">
+                    Contrato modelo de referencia
+                  </summary>
+                  <p className="mt-1 rounded-xl bg-arena p-2.5 text-[11px] leading-relaxed text-tinta">
+                    El formato de contrato comercial de Plaza Aragón está disponible para revisión previa durante su visita presencial o solicitándolo por WhatsApp al {OFFICIAL_PHONE_DISPLAY}.
+                  </p>
+                </details>
+
+                <details className="group">
+                  <summary className="cursor-pointer font-semibold hover:text-azul">
+                    Aviso de privacidad
+                  </summary>
+                  <p className="mt-1 rounded-xl bg-arena p-2.5 text-[11px] leading-relaxed text-tinta">
+                    Los datos de contacto proporcionados en la lista de espera y el Portal de Inquilinos se utilizan exclusivamente para la gestión comercial y contractual de Plaza Aragón.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col items-start justify-between gap-4 border-t border-crema pb-14 pt-6 text-xs font-semibold text-piedra sm:flex-row sm:items-center sm:pb-2 sm:pr-52">
+            <span>© 2026 Plaza Aragón. Todos los derechos reservados.</span>
+            <TechneticaCredit />
           </div>
         </div>
       </footer>
+
+      <a
+        href={whatsappWaitlistUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="¿Consultas? Escríbenos por WhatsApp"
+        data-testid="floating-whatsapp-button"
+        className="group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2.5 rounded-full bg-[#25D366] px-4 py-3 text-azul-oscuro shadow-lg ring-2 ring-white transition duration-200 hover:scale-105 hover:bg-[#1fe05f] active:scale-95"
+      >
+        <span className="hidden text-xs font-extrabold tracking-tight sm:inline">
+          ¿Consultas? Escríbenos
+        </span>
+        <svg className="h-6 w-6 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.492 5.451 5.587-1.466c1.911 1.258 4.195 1.982 6.621 1.982 6.627 0 12-5.373 12-12s-5.373-12-12-12z" />
+        </svg>
+      </a>
     </div>
   );
 }
-
-
