@@ -41,14 +41,12 @@ const fallbackSpaces: Space[] = [
 ];
 
 const TECHNICAL_SPECS = [
-  { label: "Área útil", value: "70 m² por módulo" },
-  { label: "Frente comercial", value: "~7 metros de vitrina frontal" },
-  { label: "Altura libre", value: "3.00 metros" },
+  { label: "Área útil", value: "Desde 60 m²" },
+  { label: "Frente comercial", value: "5 metros de vitrina frontal" },
+  { label: "Altura libre", value: "4.00 metros" },
   { label: "Suministro eléctrico", value: "110V / 220V con medidor individual" },
-  { label: "Suministro de agua", value: "Conexión y cisterna independiente" },
-  { label: "Internet/Telecom", value: "Disponibilidad de fibra óptica local" },
-  { label: "Estacionamiento", value: "Área asignada frontal y para clientes" },
-  { label: "Acceso", value: "Horario comercial amplio lunes a sábado" },
+  { label: "Internet", value: "Disponibilidad de conexión, preinstalación" },
+  { label: "Estacionamiento", value: "Estacionamiento frontal" },
 ];
 
 const RECOMMENDED_SECTORS = [

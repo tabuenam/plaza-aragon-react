@@ -21,14 +21,13 @@
 
 ## 2. Ficha Técnica por Módulo Comercial
 
-- **Área útil**: 70 m² por módulo en planta baja
-- **Frente comercial**: ~7 metros de vitrina frontal panorámica de vidrio templado
+- **Área útil**: Desde 60 m² en adelante
+- **Frente comercial**: 5 metros de vitrina frontal panorámica de vidrio templado
 - **Altura libre**: 3.00 metros
 - **Suministro eléctrico**: 110V / 220V con medidor individual propio por local
-- **Suministro de agua**: Conexión y cisterna independiente con baño privado interno
 - **Climatización y Acabados**: Aire acondicionado instalado y piso de porcelanato de alto tráfico
-- **Internet / Telecom**: Disponibilidad de fibra óptica local
-- **Estacionamiento**: Área asignada frontal y parqueo para clientes sobre Avenida el Caliche
+- **Internet / Telecom**: Disponibilidad de conexión, preinstalación
+- **Estacionamiento**: Estacionamiento frontal
 - **Giros Comerciales Recomendados**: Farmacias, Clínicas y Consultorios, Bufetes Legales, Boutiques, Cafeterías, Servicios Financieros y Tiendas de Tecnología
 
 ---
