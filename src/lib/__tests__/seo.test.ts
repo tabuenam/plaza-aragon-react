@@ -216,5 +216,33 @@ describe("SEO and Generative Search Engine Configuration", () => {
       assert.ok(srcs.includes("/icon-192.png"));
       assert.ok(srcs.includes("/logo.png"));
     });
+
+    it("uses official WhatsApp Brand Resource Center SVG assets and removes custom WhatsApp SVGs", () => {
+      const baseDir = "public/whatsapp/Brand Resource Center Page Downloads";
+      const expectedSvgs = [
+        `${baseDir}/01_Glyph/01_Digital RGB/03_SVG/Digital_Glyph_Green_RGB_2026.svg`,
+        `${baseDir}/01_Glyph/01_Digital RGB/03_SVG/Digital_Glyph_Black_RGB_2026.svg`,
+        `${baseDir}/01_Glyph/01_Digital RGB/03_SVG/Digital_Glyph_White_RGB_2026.svg`,
+        `${baseDir}/02_Inline/01_Digital RGB/03_SVG/Digital_Inline_Green_RGB_2026.svg`,
+        `${baseDir}/02_Inline/01_Digital RGB/03_SVG/Digital_Inline_Black_RGB_2026.svg`,
+        `${baseDir}/02_Inline/01_Digital RGB/03_SVG/Digital_Inline_White_RGB_2026.svg`,
+        `${baseDir}/03_Stacked/01_Digital RGB/03_SVG/Digital_Stacked_Green_RGB_2026.svg`,
+        `${baseDir}/03_Stacked/01_Digital RGB/03_SVG/Digital_Stacked_Black_RGB_2026.svg`,
+        `${baseDir}/03_Stacked/01_Digital RGB/03_SVG/Digital_Stacked_White_RGB_2026.svg`,
+      ];
+
+      for (const relSvg of expectedSvgs) {
+        const fullPath = path.resolve(process.cwd(), relSvg);
+        assert.ok(fs.existsSync(fullPath), `${relSvg} must exist`);
+      }
+
+      const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf-8");
+      const explorerSource = fs.readFileSync(path.resolve(process.cwd(), "src/app/catalog-explorer.tsx"), "utf-8");
+
+      assert.ok(!pageSource.includes("M12.031 6.172"), "page.tsx must not contain legacy custom WhatsApp SVG path");
+      assert.ok(!explorerSource.includes("M12.031 6.172"), "catalog-explorer.tsx must not contain legacy custom WhatsApp SVG path");
+      assert.ok(pageSource.includes("WhatsAppInlineLogo") && pageSource.includes("WhatsAppGlyph"));
+      assert.ok(explorerSource.includes("WhatsAppStackedLogo") && explorerSource.includes("WhatsAppGlyph"));
+    });
   });
 });

@@ -2,6 +2,7 @@
 
 import { SpaceGallery } from "@/app/space-gallery";
 import { StatusBadge } from "@/components/status-badge";
+import { WhatsAppGlyph, WhatsAppStackedLogo } from "@/components/whatsapp-brand";
 import {
   computeCatalogStats,
   filterSpaces,
@@ -41,7 +42,7 @@ function getSpaceDisplayMeta(space: Space, index: number) {
       description:
         space.description && space.description.length > 20
           ? space.description
-          : "Módulo comercial esquinero en planta baja de 70 m² con doble ángulo visual, vitrina panorámica hacia la Calle Principal, baño privado y medidor eléctrico propio.",
+          : "Módulo comercial esquinero en planta baja de 70 m² con doble ángulo visual, vitrina panorámica hacia la Avenida el Caliche, baño privado y medidor eléctrico propio.",
     };
   }
 
@@ -301,13 +302,11 @@ export function PlazaInteractiveSection({
               href={heroWhatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-base font-semibold text-white transition hover:bg-white/20 active:scale-[0.98]"
+              className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl border border-whatsapp/45 bg-whatsapp-oscuro/80 px-5 py-3 text-base font-semibold text-white shadow-xs transition hover:border-whatsapp hover:bg-whatsapp-oscuro active:scale-[0.98]"
               data-testid="hero-whatsapp-cta"
             >
-              <svg className="h-5 w-5 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.492 5.451 5.587-1.466c1.911 1.258 4.195 1.982 6.621 1.982 6.627 0 12-5.373 12-12s-5.373-12-12-12z" />
-              </svg>
-              Agendar visita o consultar por WhatsApp
+              <WhatsAppGlyph variant="green" className="h-5 w-5 shrink-0" size={20} />
+              <span>Agendar visita o consultar por WhatsApp</span>
             </a>
           </div>
 
@@ -359,7 +358,7 @@ export function PlazaInteractiveSection({
               Locales diseñados para vender
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-piedra sm:text-base">
-              70 m² optimizados por módulo, acabados en porcelanato y máxima visibilidad comercial hacia la calle principal.
+              70 m² optimizados por módulo, acabados en porcelanato y máxima visibilidad comercial hacia la Avenida el Caliche.
             </p>
           </div>
 
@@ -482,8 +481,8 @@ export function PlazaInteractiveSection({
 
               <ul className="mt-5 space-y-2.5 border-t border-crema/80 pt-4 text-xs font-semibold text-tinta sm:text-sm">
                 <li className="flex items-start gap-2.5">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-selva-claro text-selva" aria-hidden="true">
-                    ✓
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-whatsapp/15 ring-1 ring-whatsapp/35" aria-hidden="true">
+                    <WhatsAppGlyph variant="green" className="h-3.5 w-3.5" size={14} />
                   </span>
                   <span>Aviso directo por WhatsApp antes de publicar disponibilidad</span>
                 </li>
@@ -549,10 +548,10 @@ export function PlazaInteractiveSection({
             {submittedUrl ? (
               <div className="py-6 text-center">
                 <div
-                  className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-selva-claro text-2xl font-bold text-selva"
+                  className="mx-auto inline-flex items-center justify-center rounded-2xl bg-whatsapp-oscuro px-5 py-3.5 shadow-xs ring-1 ring-whatsapp/30"
                   aria-hidden="true"
                 >
-                  ✓
+                  <WhatsAppStackedLogo variant="green" className="h-11 w-auto" height={44} />
                 </div>
                 <h3 className="mt-4 font-display text-xl font-bold text-tinta">
                   ¡Solicitud lista para confirmar!
@@ -565,9 +564,10 @@ export function PlazaInteractiveSection({
                     href={submittedUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-accent text-sm"
+                    className="btn-whatsapp text-sm"
                   >
-                    Enviar registro por WhatsApp →
+                    <WhatsAppGlyph variant="black" className="h-5 w-5 shrink-0" size={20} />
+                    <span>Enviar registro por WhatsApp →</span>
                   </a>
                   <button
                     type="button"
@@ -629,8 +629,9 @@ export function PlazaInteractiveSection({
                   </div>
 
                   <div>
-                    <label htmlFor={phoneInputId} className="label">
-                      Teléfono / WhatsApp *
+                    <label htmlFor={phoneInputId} className="label inline-flex items-center gap-1.5">
+                      <WhatsAppGlyph variant="green" className="h-3.5 w-3.5 shrink-0" size={14} />
+                      <span>Teléfono / WhatsApp *</span>
                     </label>
                     <input
                       id={phoneInputId}
@@ -735,9 +736,10 @@ export function PlazaInteractiveSection({
                   <button
                     type="submit"
                     data-testid="waitlist-submit-btn"
-                    className="btn-accent min-h-11 px-5 py-2.5 text-sm"
+                    className="btn-whatsapp min-h-11 px-5 py-2.5 text-sm"
                   >
-                    Registrarme en lista prioritaria →
+                    <WhatsAppGlyph variant="black" className="h-4.5 w-4.5 shrink-0" size={18} />
+                    <span>Registrarme en lista prioritaria →</span>
                   </button>
                 </div>
               </form>

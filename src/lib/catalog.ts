@@ -156,7 +156,7 @@ export function buildStructuredData(
         paymentAccepted: "Transferencia bancaria, depósito",
         address: {
           "@type": "PostalAddress",
-          streetAddress: "Calle Principal, contiguo a Hotel Olanchito, a 120m del Parque Central",
+          streetAddress: "Avenida el Caliche, contiguo a Hotel Olanchito, a 120m del Parque Central",
           addressLocality: "Olanchito",
           addressRegion: "Yoro",
           addressCountry: "HN",

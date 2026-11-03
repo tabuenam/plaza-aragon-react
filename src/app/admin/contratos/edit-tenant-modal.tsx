@@ -6,6 +6,7 @@ import { AdminDialog } from "@/app/admin/admin-dialog";
 import { useAdminToast } from "@/app/admin/admin-toast";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
+import { WhatsAppGlyph } from "@/components/whatsapp-brand";
 import type { AdminTenant, FormState } from "@/lib/types";
 
 const initialState: FormState = { ok: true, message: "" };
@@ -100,8 +101,9 @@ function EditTenantForm({
         </div>
 
         <div>
-          <label htmlFor={`${fieldId}-contact`} className="label">
-            Teléfono / WhatsApp de contacto
+          <label htmlFor={`${fieldId}-contact`} className="label inline-flex items-center gap-1.5">
+            <WhatsAppGlyph variant="green" className="h-3.5 w-3.5 shrink-0" size={14} />
+            <span>Teléfono / WhatsApp de contacto</span>
           </label>
           <input
             id={`${fieldId}-contact`}
