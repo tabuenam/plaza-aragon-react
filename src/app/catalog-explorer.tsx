@@ -4,6 +4,7 @@ import { SpaceGallery } from "@/app/space-gallery";
 import { StatusBadge } from "@/components/status-badge";
 import { WhatsAppGlyph, WhatsAppStackedLogo } from "@/components/whatsapp-brand";
 import {
+  cleanPhoneDigits,
   computeCatalogStats,
   filterSpaces,
   getSpaceCatalogTags,
@@ -15,8 +16,6 @@ import type { Space } from "@/lib/types";
 import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent } from "react";
 
 export { computeCatalogStats, filterSpaces, getSpaceHighlights, type FilterOption };
-
-const WAITLIST_WHATSAPP_BASE = "50449151750";
 
 const BUSINESS_SECTORS = [
   "Farmacia / Salud",
@@ -95,11 +94,7 @@ export function PlazaInteractiveSection({
   const notesInputId = useId();
   const errorId = useId();
 
-  const cleanDigits = whatsapp.replace(/\D/g, "");
-  const targetPhone =
-    cleanDigits.startsWith("504") && cleanDigits.length === 11
-      ? cleanDigits
-      : WAITLIST_WHATSAPP_BASE;
+  const targetPhone = cleanPhoneDigits(whatsapp);
 
   const primarySpaces = spaces.slice(0, 2);
   const totalOperating = primarySpaces.filter((s) => s.status === "occupied").length || 2;
