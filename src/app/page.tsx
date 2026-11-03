@@ -6,8 +6,8 @@ import {
   buildStructuredData,
   computeCatalogStats,
   FAQS,
-  OFFICIAL_PHONE_DISPLAY,
-  OFFICIAL_WHATSAPP_DIGITS,
+  getAppPhoneDigits,
+  getAppPhoneDisplay,
 } from "@/lib/catalog";
 import { getPublicSpaces } from "@/lib/data";
 import type { Space } from "@/lib/types";
@@ -89,12 +89,13 @@ export default async function HomePage() {
   const fetchedSpaces = await getPublicSpaces();
   const spaces = fetchedSpaces.length > 0 ? fetchedSpaces : fallbackSpaces;
   const stats = computeCatalogStats(spaces);
-  const whatsapp = OFFICIAL_WHATSAPP_DIGITS;
+  const whatsapp = getAppPhoneDigits();
+  const phoneDisplay = getAppPhoneDisplay();
   const whatsappWaitlistUrl = `https://wa.me/${whatsapp}?text=${encodeURIComponent(
     "Hola, quiero información sobre la lista de espera en Plaza Aragón"
   )}`;
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://plaza-aragon.com").trim().replace(/\/+$/, "");
-  const structuredData = buildStructuredData(spaces, stats, baseUrl);
+  const structuredData = buildStructuredData(spaces, stats, baseUrl, phoneDisplay);
 
   return (
     <div className="flex min-h-dvh flex-col bg-arena selection:bg-turquesa-claro selection:text-azul">
@@ -656,7 +657,7 @@ export default async function HomePage() {
                             className="inline-flex items-center gap-1.5 font-bold text-whatsapp underline decoration-whatsapp/50 underline-offset-2 transition hover:text-white"
                           >
                             <WhatsAppGlyph variant="green" className="h-3.5 w-3.5 shrink-0" size={14} />
-                            <span>{OFFICIAL_PHONE_DISPLAY}</span>
+                            <span>{phoneDisplay}</span>
                           </a>
                         </dd>
                       </div>
@@ -692,7 +693,7 @@ export default async function HomePage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-whatsapp/15 px-2.5 py-1 font-extrabold text-whatsapp-oscuro ring-1 ring-whatsapp/35 transition hover:bg-whatsapp"
                 >
-                  <span>{OFFICIAL_PHONE_DISPLAY}</span>
+                  <span>{phoneDisplay}</span>
                 </a>
               </p>
             </div>
@@ -749,7 +750,7 @@ export default async function HomePage() {
                     Contrato modelo de referencia
                   </summary>
                   <p className="mt-1 rounded-xl bg-arena p-2.5 text-[11px] leading-relaxed text-tinta">
-                    El formato de contrato comercial de Plaza Aragón está disponible para revisión previa durante su visita presencial o solicitándolo por WhatsApp al {OFFICIAL_PHONE_DISPLAY}.
+                    El formato de contrato comercial de Plaza Aragón está disponible para revisión previa durante su visita presencial o solicitándolo por WhatsApp al {phoneDisplay}.
                   </p>
                 </details>
 

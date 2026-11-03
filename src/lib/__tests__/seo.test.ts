@@ -128,7 +128,7 @@ describe("SEO and Generative Search Engine Configuration", () => {
   });
 
   describe("JSON-LD Structured Data (buildStructuredData)", () => {
-    it("includes 9 FAQ questions, +504 4915-1750 telephone, and PreOrder waitlist availability", () => {
+    it("includes 9 FAQ questions, telephone (+49 151 75088921 default), and PreOrder waitlist availability", () => {
       const mockSpaces: Space[] = [
         {
           id: "1",
@@ -157,10 +157,11 @@ describe("SEO and Generative Search Engine Configuration", () => {
       const graph = data["@graph"];
       const place = graph.find((node) => node["@type"] === "ShoppingCenter");
       assert.ok(place && "telephone" in place && place.hasOfferCatalog);
-      assert.equal(place.telephone, "+504 4915-1750");
+      assert.equal(place.telephone, "+49 151 75088921");
       assert.equal(place.geo.latitude, 15.4845687);
       assert.equal(place.geo.longitude, -86.5675536);
       assert.ok(place.hasMap.includes("ChIJISm-U0NtaY8R5woW03JAg5s"));
+
 
       const offers = place.hasOfferCatalog.itemListElement;
       assert.ok(offers.length >= 3);

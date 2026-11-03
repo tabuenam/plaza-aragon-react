@@ -1,9 +1,32 @@
 import type { Space } from "./types.ts";
+import {
+  DEFAULT_PHONE_DIGITS,
+  DEFAULT_PHONE_DISPLAY,
+  DEFAULT_PHONE_NUMBER,
+  cleanPhoneDigits,
+  formatPhoneDisplay,
+  getAppPhoneDigits,
+  getAppPhoneDisplay,
+  getAppPhoneNumber,
+  getWhatsAppLink,
+} from "./phone.ts";
 
 export type FilterOption = "all" | "open" | "occupied";
 
-export const OFFICIAL_WHATSAPP_DIGITS = "50449151750";
-export const OFFICIAL_PHONE_DISPLAY = "+504 4915-1750";
+export {
+  DEFAULT_PHONE_DIGITS,
+  DEFAULT_PHONE_DISPLAY,
+  DEFAULT_PHONE_NUMBER,
+  cleanPhoneDigits,
+  formatPhoneDisplay,
+  getAppPhoneDigits,
+  getAppPhoneDisplay,
+  getAppPhoneNumber,
+  getWhatsAppLink,
+};
+
+export const OFFICIAL_WHATSAPP_DIGITS = getAppPhoneDigits();
+export const OFFICIAL_PHONE_DISPLAY = getAppPhoneDisplay();
 
 const SPACE_HIGHLIGHTS: Record<number, string[]> = {
   1: ["Planta baja", "Vitrina panorámica", "Acceso directo"],
@@ -122,7 +145,8 @@ export function computeCatalogStats(spaces: Space[]) {
 export function buildStructuredData(
   spaces: Space[],
   stats: ReturnType<typeof computeCatalogStats>,
-  baseUrl: string
+  baseUrl: string,
+  telephone?: string
 ) {
   const priceDisplay =
     stats.minPrice > 0 && stats.maxPrice > 0
@@ -140,7 +164,7 @@ export function buildStructuredData(
         description:
           "Locales comerciales modernos de 70 m² en renta en Olanchito, Yoro, Honduras. Vitrina panorámica, baño privado, medidor independiente y lista de espera prioritaria activa.",
         url: baseUrl,
-        telephone: OFFICIAL_PHONE_DISPLAY,
+        telephone: telephone ?? getAppPhoneDisplay(),
         image: `${baseUrl}/opengraph-image`,
         logo: {
           "@type": "ImageObject",
