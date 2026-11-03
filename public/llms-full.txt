@@ -8,7 +8,7 @@
 
 - **Nombre Oficial**: Plaza Aragón
 - **Dirección Física**: Avenida el Caliche, contiguo a Hotel Olanchito, a 120m del Parque Central, Olanchito, Yoro, Honduras
-- **Coordenadas Geográficas**: 15.4811° N, -86.5742° O
+- **Coordenadas Geográficas**: 15.4845687° N, -86.5675536° O (Plus Code: FCMJ+RX Olanchito, Honduras)
 - **Teléfono y WhatsApp Oficial**: +504 4915-1750 (https://wa.me/50449151750)
 - **Moneda de Transacción**: Lempiras hondureños (HNL)
 - **Canon de Renta Mensual**: Desde L. 8,000 HNL / mes por módulo de 70 m²

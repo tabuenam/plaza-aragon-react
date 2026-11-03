@@ -158,6 +158,9 @@ describe("SEO and Generative Search Engine Configuration", () => {
       const place = graph.find((node) => node["@type"] === "ShoppingCenter");
       assert.ok(place && "telephone" in place && place.hasOfferCatalog);
       assert.equal(place.telephone, "+504 4915-1750");
+      assert.equal(place.geo.latitude, 15.4845687);
+      assert.equal(place.geo.longitude, -86.5675536);
+      assert.ok(place.hasMap.includes("ChIJISm-U0NtaY8R5woW03JAg5s"));
 
       const offers = place.hasOfferCatalog.itemListElement;
       assert.ok(offers.length >= 3);
@@ -243,6 +246,22 @@ describe("SEO and Generative Search Engine Configuration", () => {
       assert.ok(!explorerSource.includes("M12.031 6.172"), "catalog-explorer.tsx must not contain legacy custom WhatsApp SVG path");
       assert.ok(pageSource.includes("WhatsAppInlineLogo") && pageSource.includes("WhatsAppGlyph"));
       assert.ok(explorerSource.includes("WhatsAppStackedLogo") && explorerSource.includes("WhatsAppGlyph"));
+    });
+
+    it("embeds the official Google Business Google Maps iframe for Plaza Aragón", () => {
+      const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf-8");
+      assert.ok(
+        pageSource.includes("https://www.google.com/maps/embed?pb="),
+        "page.tsx must embed Google Maps directly via iframe"
+      );
+      assert.ok(
+        pageSource.includes("0x8f696d4353be2921%3A0x9b834072d3160ae7"),
+        "page.tsx must reference the exact Google Business listing feature ID for Plaza Aragón"
+      );
+      assert.ok(
+        pageSource.includes("ChIJISm-U0NtaY8R5woW03JAg5s"),
+        "page.tsx must link to the Google Business Place ID for Plaza Aragón"
+      );
     });
   });
 });
