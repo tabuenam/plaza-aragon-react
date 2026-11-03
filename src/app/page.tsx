@@ -1,12 +1,13 @@
 import { PlazaInteractiveSection } from "@/app/catalog-explorer";
 import { Logo } from "@/components/logo";
 import { TechneticaCredit } from "@/components/technetica-credit";
+import { WhatsAppGlyph, WhatsAppInlineLogo } from "@/components/whatsapp-brand";
 import {
   buildStructuredData,
   computeCatalogStats,
   FAQS,
-  OFFICIAL_PHONE_DISPLAY,
-  OFFICIAL_WHATSAPP_DIGITS,
+  getAppPhoneDigits,
+  getAppPhoneDisplay,
 } from "@/lib/catalog";
 import { getPublicSpaces } from "@/lib/data";
 import type { Space } from "@/lib/types";
@@ -21,7 +22,7 @@ const fallbackSpaces: Space[] = [
     id: "1",
     name: "Local Pacura",
     description:
-      "Establece tu presencia en el centro de la ciudad cívica. Exclusivo módulo esquinero de 70 m² en planta baja con vitrina panorámica hacia la Calle Principal, contiguo a Hotel Olanchito y a 120m del Parque Central.",
+      "Establece tu presencia en el centro de la ciudad cívica. Exclusivo módulo esquinero de 70 m² en planta baja con vitrina panorámica hacia la Avenida el Caliche, contiguo a Hotel Olanchito y a 120m del Parque Central.",
     price: 8000,
     status: "occupied",
     image_urls: [],
@@ -88,12 +89,13 @@ export default async function HomePage() {
   const fetchedSpaces = await getPublicSpaces();
   const spaces = fetchedSpaces.length > 0 ? fetchedSpaces : fallbackSpaces;
   const stats = computeCatalogStats(spaces);
-  const whatsapp = OFFICIAL_WHATSAPP_DIGITS;
+  const whatsapp = getAppPhoneDigits();
+  const phoneDisplay = getAppPhoneDisplay();
   const whatsappWaitlistUrl = `https://wa.me/${whatsapp}?text=${encodeURIComponent(
     "Hola, quiero información sobre la lista de espera en Plaza Aragón"
   )}`;
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://plaza-aragon.com").trim().replace(/\/+$/, "");
-  const structuredData = buildStructuredData(spaces, stats, baseUrl);
+  const structuredData = buildStructuredData(spaces, stats, baseUrl, phoneDisplay);
 
   return (
     <div className="flex min-h-dvh flex-col bg-arena selection:bg-turquesa-claro selection:text-azul">
@@ -136,12 +138,10 @@ export default async function HomePage() {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="header-whatsapp-cta"
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-2 text-xs font-extrabold text-azul-oscuro shadow-2xs transition hover:bg-[#1fe05f] active:scale-95 sm:gap-2 sm:px-4 sm:text-sm"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-whatsapp px-3.5 py-2 text-xs font-extrabold text-whatsapp-oscuro shadow-2xs transition hover:bg-[#1fe05f] active:scale-95 sm:px-4 sm:text-sm"
             >
-              <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.492 5.451 5.587-1.466c1.911 1.258 4.195 1.982 6.621 1.982 6.627 0 12-5.373 12-12s-5.373-12-12-12z" />
-              </svg>
-              <span>WhatsApp</span>
+              <WhatsAppInlineLogo variant="black" className="h-4 w-auto sm:h-4.5" height={18} />
+              <span className="sr-only">WhatsApp</span>
             </a>
 
             <details className="relative lg:hidden">
@@ -320,7 +320,7 @@ export default async function HomePage() {
               Ubicación en mapa y ficha técnica
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-piedra sm:text-base">
-              Situada sobre la Calle Principal de Olanchito, en el corredor comercial de mayor plusvalía y tránsito peatonal de la ciudad.
+              Situada sobre la Avenida el Caliche de Olanchito, en el corredor comercial de mayor plusvalía y tránsito peatonal de la ciudad.
             </p>
           </div>
 
@@ -333,7 +333,7 @@ export default async function HomePage() {
                       Centro de Olanchito, Yoro
                     </h3>
                     <p className="text-xs font-medium text-piedra">
-                      Calle Principal • Coordenadas: 15.4811° N, -86.5742° O
+                      Avenida el Caliche • Coordenadas: 15.4811° N, -86.5742° O
                     </p>
                   </div>
                   <a
@@ -349,7 +349,7 @@ export default async function HomePage() {
 
                 <div
                   role="img"
-                  aria-label="Mapa esquemático de ubicación de Plaza Aragón en Calle Principal de Olanchito, a 30 metros de Hotel Olanchito y 120 metros del Parque Central"
+                  aria-label="Mapa esquemático de ubicación de Plaza Aragón en Avenida el Caliche de Olanchito, a 30 metros de Hotel Olanchito y 120 metros del Parque Central"
                   className="relative mt-4 overflow-hidden rounded-2xl border border-crema bg-arena p-4 blueprint-grid"
                 >
                   <svg viewBox="0 0 520 280" className="h-auto w-full" aria-hidden="true">
@@ -358,7 +358,7 @@ export default async function HomePage() {
                     <path d="M0 140 H520" stroke="#ffffff" strokeWidth="26" />
                     <path d="M0 140 H520" stroke="#df9b1a" strokeWidth="2" strokeDasharray="8 8" />
                     <text x="235" y="133" fill="#52606d" fontSize="10" fontWeight="700" letterSpacing="1">
-                      CALLE PRINCIPAL DE OLANCHITO
+                      Avenida el Caliche DE OLANCHITO
                     </text>
 
                     <g transform="translate(332, 36)">
@@ -408,7 +408,7 @@ export default async function HomePage() {
                     <p className="mt-1 font-display text-sm font-bold text-tinta">
                       Plaza Aragón
                     </p>
-                    <p className="text-xs text-piedra">Calle Principal, Planta Baja</p>
+                    <p className="text-xs text-piedra">Avenida el Caliche, Planta Baja</p>
                   </div>
 
                   <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
@@ -434,7 +434,7 @@ export default async function HomePage() {
               </div>
 
               <p className="mt-5 border-t border-crema/80 pt-4 text-xs leading-relaxed text-piedra">
-                Dirección exacta: <strong>Calle Principal, contiguo a Hotel Olanchito, a 120m del Parque Central, Olanchito, Yoro, Honduras.</strong>
+                Dirección exacta: <strong>Avenida el Caliche, contiguo a Hotel Olanchito, a 120m del Parque Central, Olanchito, Yoro, Honduras.</strong>
               </p>
             </div>
 
@@ -517,6 +517,19 @@ export default async function HomePage() {
                       {item.description}
                     </p>
                   </div>
+                  {index === 0 && (
+                    <div className="mt-4 border-t border-crema/70 pt-3">
+                      <a
+                        href={whatsappWaitlistUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-extrabold text-whatsapp-oscuro hover:underline"
+                      >
+                        <WhatsAppGlyph variant="green" className="h-4 w-4 shrink-0" size={16} />
+                        <span>Escribir por WhatsApp →</span>
+                      </a>
+                    </div>
+                  )}
                 </li>
               ))}
             </ol>
@@ -628,9 +641,10 @@ export default async function HomePage() {
                     href={whatsappWaitlistUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-accent"
+                    className="btn-whatsapp"
                   >
-                    Contactar Administración por WhatsApp
+                    <WhatsAppGlyph variant="black" className="h-5 w-5 shrink-0" size={20} />
+                    <span>Contactar Administración por WhatsApp</span>
                   </a>
                 </div>
               </div>
@@ -671,18 +685,19 @@ export default async function HomePage() {
                     <dl className="mt-2.5 space-y-2 text-xs text-crema/95">
                       <div>
                         <dt className="font-bold text-white">Dirección:</dt>
-                        <dd>Plaza Aragón, Calle Principal, Olanchito, Yoro, Honduras.</dd>
+                        <dd>Plaza Aragón, Avenida el Caliche, Olanchito, Yoro, Honduras.</dd>
                       </div>
                       <div>
                         <dt className="font-bold text-white">Teléfono / WhatsApp:</dt>
-                        <dd>
+                        <dd className="mt-0.5">
                           <a
                             href={whatsappWaitlistUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-bold text-maiz-claro underline hover:text-white"
+                            className="inline-flex items-center gap-1.5 font-bold text-whatsapp underline decoration-whatsapp/50 underline-offset-2 transition hover:text-white"
                           >
-                            {OFFICIAL_PHONE_DISPLAY}
+                            <WhatsAppGlyph variant="green" className="h-3.5 w-3.5 shrink-0" size={14} />
+                            <span>{phoneDisplay}</span>
                           </a>
                         </dd>
                       </div>
@@ -707,15 +722,18 @@ export default async function HomePage() {
               <p className="mt-3 max-w-md text-xs leading-relaxed text-piedra sm:text-sm">
                 Locales comerciales modernos de 70 m² en el centro de Olanchito, Yoro, Honduras. Contiguo a Hotel Olanchito, a 120m del Parque Central.
               </p>
-              <p className="mt-2 text-xs font-bold text-tinta">
-                WhatsApp Oficial:{" "}
+              <p className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-tinta">
+                <span className="inline-flex items-center gap-1.5">
+                  <WhatsAppGlyph variant="green" className="h-4 w-4 shrink-0" size={16} />
+                  <span>WhatsApp Oficial:</span>
+                </span>
                 <a
                   href={whatsappWaitlistUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-azul hover:underline"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-whatsapp/15 px-2.5 py-1 font-extrabold text-whatsapp-oscuro ring-1 ring-whatsapp/35 transition hover:bg-whatsapp"
                 >
-                  {OFFICIAL_PHONE_DISPLAY}
+                  <span>{phoneDisplay}</span>
                 </a>
               </p>
             </div>
@@ -772,7 +790,7 @@ export default async function HomePage() {
                     Contrato modelo de referencia
                   </summary>
                   <p className="mt-1 rounded-xl bg-arena p-2.5 text-[11px] leading-relaxed text-tinta">
-                    El formato de contrato comercial de Plaza Aragón está disponible para revisión previa durante su visita presencial o solicitándolo por WhatsApp al {OFFICIAL_PHONE_DISPLAY}.
+                    El formato de contrato comercial de Plaza Aragón está disponible para revisión previa durante su visita presencial o solicitándolo por WhatsApp al {phoneDisplay}.
                   </p>
                 </details>
 
@@ -801,14 +819,12 @@ export default async function HomePage() {
         rel="noopener noreferrer"
         aria-label="¿Consultas? Escríbenos por WhatsApp"
         data-testid="floating-whatsapp-button"
-        className="group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2.5 rounded-full bg-[#25D366] px-4 py-3 text-azul-oscuro shadow-lg ring-2 ring-white transition duration-200 hover:scale-105 hover:bg-[#1fe05f] active:scale-95"
+        className="group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2.5 rounded-full bg-whatsapp px-4 py-3 text-whatsapp-oscuro shadow-lg ring-2 ring-white transition duration-200 hover:scale-105 hover:bg-[#1fe05f] active:scale-95"
       >
         <span className="hidden text-xs font-extrabold tracking-tight sm:inline">
           ¿Consultas? Escríbenos
         </span>
-        <svg className="h-6 w-6 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.492 5.451 5.587-1.466c1.911 1.258 4.195 1.982 6.621 1.982 6.627 0 12-5.373 12-12s-5.373-12-12-12z" />
-        </svg>
+        <WhatsAppGlyph variant="black" className="h-6 w-6 shrink-0" size={24} />
       </a>
     </div>
   );

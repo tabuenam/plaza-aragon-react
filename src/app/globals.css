@@ -20,6 +20,8 @@
   --color-crema: #e5dac7;
   --color-tinta: #16202a;
   --color-piedra: #52606d;
+  --color-whatsapp: #25d366;
+  --color-whatsapp-oscuro: #111b21;
 }
 
 @utility lenca-band {
@@ -133,6 +135,10 @@
 
   .btn-accent {
     @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 bg-barro text-white shadow-sm hover:bg-[#9e3d1c] cursor-pointer;
+  }
+
+  .btn-whatsapp {
+    @apply inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-base font-extrabold transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 bg-whatsapp text-whatsapp-oscuro shadow-sm hover:bg-[#1fe05f] cursor-pointer;
   }
 
   .btn-ghost {
