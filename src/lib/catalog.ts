@@ -187,9 +187,11 @@ export function buildStructuredData(
         },
         geo: {
           "@type": "GeoCoordinates",
-          latitude: 15.4811,
-          longitude: -86.5742,
+          latitude: 15.4845687,
+          longitude: -86.5675536,
         },
+        hasMap:
+          "https://www.google.com/maps/search/?api=1&query=Plaza+Arag%C3%B3n%2C+Olanchito&query_place_id=ChIJISm-U0NtaY8R5woW03JAg5s",
         openingHoursSpecification: [
           {
             "@type": "OpeningHoursSpecification",

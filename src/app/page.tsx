@@ -333,11 +333,11 @@ export default async function HomePage() {
                       Centro de Olanchito, Yoro
                     </h3>
                     <p className="text-xs font-medium text-piedra">
-                      Avenida el Caliche • Coordenadas: 15.4811° N, -86.5742° O
+                      Avenida el Caliche • Plus Code: FCMJ+RX • 15.4846° N, -86.5676° O
                     </p>
                   </div>
                   <a
-                    href="https://www.google.com/maps/search/?api=1&query=15.4811,-86.5742"
+                    href="https://www.google.com/maps/search/?api=1&query=Plaza+Arag%C3%B3n%2C+Olanchito&query_place_id=ChIJISm-U0NtaY8R5woW03JAg5s"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 rounded-xl bg-azul/10 px-3 py-1.5 text-xs font-bold text-azul transition hover:bg-azul hover:text-white"
@@ -347,57 +347,17 @@ export default async function HomePage() {
                   </a>
                 </div>
 
-                <div
-                  role="img"
-                  aria-label="Mapa esquemático de ubicación de Plaza Aragón en Avenida el Caliche de Olanchito, a 30 metros de Hotel Olanchito y 120 metros del Parque Central"
-                  className="relative mt-4 overflow-hidden rounded-2xl border border-crema bg-arena p-4 blueprint-grid"
-                >
-                  <svg viewBox="0 0 520 280" className="h-auto w-full" aria-hidden="true">
-                    <rect width="520" height="280" rx="14" fill="#f8f4ec" />
-                    <path d="M0 70 H520 M0 210 H520 M130 0 V280 M390 0 V280" stroke="#e5dac7" strokeWidth="10" />
-                    <path d="M0 140 H520" stroke="#ffffff" strokeWidth="26" />
-                    <path d="M0 140 H520" stroke="#df9b1a" strokeWidth="2" strokeDasharray="8 8" />
-                    <text x="235" y="133" fill="#52606d" fontSize="10" fontWeight="700" letterSpacing="1">
-                      Avenida el Caliche DE OLANCHITO
-                    </text>
-
-                    <g transform="translate(332, 36)">
-                      <rect x="0" y="0" width="154" height="68" rx="10" fill="#d7eee2" stroke="#1f5e43" strokeWidth="1.75" />
-                      <circle cx="22" cy="34" r="9" fill="#1f5e43" />
-                      <text x="38" y="30" fill="#1f5e43" fontSize="11" fontWeight="800">
-                        Parque Central
-                      </text>
-                      <text x="38" y="45" fill="#1f5e43" fontSize="9.5" fontWeight="600">
-                        de Olanchito (a 120 m)
-                      </text>
-                    </g>
-
-                    <g transform="translate(210, 165)">
-                      <rect x="0" y="0" width="128" height="58" rx="10" fill="#daf0f5" stroke="#1693ad" strokeWidth="1.75" />
-                      <circle cx="20" cy="29" r="8" fill="#1693ad" />
-                      <text x="34" y="26" fill="#0b3d66" fontSize="11" fontWeight="800">
-                        Hotel Olanchito
-                      </text>
-                      <text x="34" y="40" fill="#52606d" fontSize="9.5" fontWeight="600">
-                        Contiguo (a 30 m)
-                      </text>
-                    </g>
-
-                    <g transform="translate(55, 88)">
-                      <circle cx="65" cy="52" r="26" fill="#b84a24" fillOpacity="0.16" />
-                      <rect x="0" y="0" width="142" height="64" rx="12" fill="#0b3d66" stroke="#df9b1a" strokeWidth="2.5" />
-                      <circle cx="22" cy="32" r="9" fill="#b84a24" stroke="#ffffff" strokeWidth="2" />
-                      <text x="38" y="27" fill="#ffffff" fontSize="12" fontWeight="800">
-                        PLAZA ARAGÓN
-                      </text>
-                      <text x="38" y="42" fill="#fdf0cf" fontSize="9.5" fontWeight="700">
-                        Pacura • Corozal
-                      </text>
-                    </g>
-
-                    <path d="M197 125 L220 165" stroke="#b84a24" strokeWidth="2" strokeDasharray="4 4" />
-                    <path d="M197 110 L350 78" stroke="#1f5e43" strokeWidth="2" strokeDasharray="4 4" />
-                  </svg>
+                <div className="relative mt-4 overflow-hidden rounded-2xl border border-crema bg-arena shadow-2xs">
+                  <iframe
+                    title="Ubicación exacta de Plaza Aragón en Google Maps — Avenida el Caliche, Olanchito, Yoro, Honduras"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1500!2d-86.5675536!3d15.4845687!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8f696d4353be2921%3A0x9b834072d3160ae7!2sPlaza%20Arag%C3%B3n!5e0!3m2!1ses!2shn!4v1730660000000!5m2!1ses!2shn"
+                    width="600"
+                    height="360"
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    className="block h-72 w-full border-0 sm:h-80"
+                  />
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
