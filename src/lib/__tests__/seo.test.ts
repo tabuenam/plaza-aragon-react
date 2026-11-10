@@ -249,7 +249,7 @@ describe("SEO and Generative Search Engine Configuration", () => {
       assert.ok(explorerSource.includes("WhatsAppStackedLogo") && explorerSource.includes("WhatsAppGlyph"));
     });
 
-    it("embeds the official Google Business Google Maps iframe for Plaza Aragón", () => {
+    it("embeds the official Google Business Google Maps iframe in a 3/4 width layout without redundant external map headers", () => {
       const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf-8");
       assert.ok(
         pageSource.includes("https://www.google.com/maps/embed?pb="),
@@ -260,8 +260,12 @@ describe("SEO and Generative Search Engine Configuration", () => {
         "page.tsx must reference the exact Google Business listing feature ID for Plaza Aragón"
       );
       assert.ok(
-        pageSource.includes("ChIJISm-U0NtaY8R5woW03JAg5s"),
-        "page.tsx must link to the Google Business Place ID for Plaza Aragón"
+        pageSource.includes("lg:col-span-9") && pageSource.includes("lg:col-span-3"),
+        "page.tsx must allocate 3/4 width (9/12 cols) to the map card and 1/4 width (3/12 cols) to the Ficha técnica card"
+      );
+      assert.ok(
+        !pageSource.includes("Abrir en Google Maps"),
+        "page.tsx must not render the redundant external Google Maps button above the iframe"
       );
     });
   });

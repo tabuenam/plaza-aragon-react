@@ -322,99 +322,80 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <div className="card flex flex-col justify-between">
-              <div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h3 className="font-display text-xl font-bold text-tinta">
-                      Centro de Olanchito, Yoro
-                    </h3>
-                    <p className="text-xs font-medium text-piedra">
-                      Avenida el Caliche • Plus Code: FCMJ+RX • 15.4846° N, -86.5676° O
-                    </p>
-                  </div>
-                  <a
-                    href="https://www.google.com/maps/search/?api=1&query=Plaza+Arag%C3%B3n%2C+Olanchito&query_place_id=ChIJISm-U0NtaY8R5woW03JAg5s"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-azul/10 px-3 py-1.5 text-xs font-bold text-azul transition hover:bg-azul hover:text-white"
-                  >
-                    <span>Abrir en Google Maps</span>
-                    <span aria-hidden="true">↗</span>
-                  </a>
+          <div className="mt-8 grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+            <div className="card flex flex-col lg:col-span-9">
+              <div className="relative overflow-clip rounded-2xl border border-crema bg-arena shadow-2xs">
+                <iframe
+                  title="Ubicación exacta de Plaza Aragón en Google Maps — Avenida el Caliche, Olanchito, Yoro, Honduras"
+                  src="https://www.google.com/maps/embed?pb=!1m21!1m12!1m3!1d1500!2d-86.5675536!3d15.4845687!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m6!1m2!1s0x8f696d4353be2921%3A0x9b834072d3160ae7!2sPlaza%20Arag%C3%B3n!1m2!1s0x0%3A0x0!2s15.4845687,-86.5675536!5e0!3m2!1ses!2shn!4v1730660000000!5m2!1ses!2shn"
+                  width="900"
+                  height="420"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="block h-80 w-full border-0 sm:h-96 lg:h-[26rem]"
+                />
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-barro">
+                    Ubicación central
+                  </span>
+                  <p className="mt-1 font-display text-sm font-bold text-tinta">
+                    Plaza Aragón
+                  </p>
+                  <p className="text-xs text-piedra">Avenida el Caliche, Planta Baja</p>
                 </div>
 
-                <div className="relative mt-4 overflow-hidden rounded-2xl border border-crema bg-arena shadow-2xs">
-                  <iframe
-                    title="Ubicación exacta de Plaza Aragón en Google Maps — Avenida el Caliche, Olanchito, Yoro, Honduras"
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1500!2d-86.5675536!3d15.4845687!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8f696d4353be2921%3A0x9b834072d3160ae7!2sPlaza%20Arag%C3%B3n!5e0!3m2!1ses!2shn!4v1730660000000!5m2!1ses!2shn"
-                    width="600"
-                    height="360"
-                    loading="lazy"
-                    allowFullScreen
-                    referrerPolicy="no-referrer-when-downgrade"
-                    className="block h-72 w-full border-0 sm:h-80"
-                  />
+                <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-turquesa">
+                    A 30 metros
+                  </span>
+                  <p className="mt-1 font-display text-sm font-bold text-tinta">
+                    Hotel Olanchito
+                  </p>
+                  <p className="text-xs text-piedra">Referencia inmediata contigua</p>
                 </div>
 
-                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-barro">
-                      Ubicación central
-                    </span>
-                    <p className="mt-1 font-display text-sm font-bold text-tinta">
-                      Plaza Aragón
-                    </p>
-                    <p className="text-xs text-piedra">Avenida el Caliche, Planta Baja</p>
-                  </div>
-
-                  <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-turquesa">
-                      A 30 metros
-                    </span>
-                    <p className="mt-1 font-display text-sm font-bold text-tinta">
-                      Hotel Olanchito
-                    </p>
-                    <p className="text-xs text-piedra">Referencia inmediata contigua</p>
-                  </div>
-
-                  <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-selva">
-                      A 120 metros
-                    </span>
-                    <p className="mt-1 font-display text-sm font-bold text-tinta">
-                      Parque Central
-                    </p>
-                    <p className="text-xs text-piedra">2 minutos caminando</p>
-                  </div>
+                <div className="rounded-2xl bg-arena p-3.5 ring-1 ring-crema/90">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-selva">
+                    A 120 metros
+                  </span>
+                  <p className="mt-1 font-display text-sm font-bold text-tinta">
+                    Parque Central
+                  </p>
+                  <p className="text-xs text-piedra">2 minutos caminando</p>
                 </div>
               </div>
 
-              <p className="mt-5 border-t border-crema/80 pt-4 text-xs leading-relaxed text-piedra">
+              <p className="mt-4 border-t border-crema/80 pt-3.5 text-xs leading-relaxed text-piedra">
                 Dirección exacta: <strong>Avenida el Caliche, contiguo a Hotel Olanchito, a 120m del Parque Central, Olanchito, Yoro, Honduras.</strong>
               </p>
             </div>
 
-            <div className="card flex flex-col justify-between">
+            <aside
+              aria-label="Ficha técnica y giros recomendados"
+              className="card flex flex-col gap-4 p-4 sm:p-5 lg:col-span-3"
+            >
               <div>
-                <h3 className="font-display text-xl font-bold text-tinta">
+                <h3 className="font-display text-lg font-bold leading-snug text-tinta">
                   Ficha técnica por módulo
                 </h3>
-                <p className="mt-1 text-xs text-piedra sm:text-sm">
+                <p className="mt-0.5 text-xs leading-relaxed text-piedra">
                   Especificaciones constructivas estándar en los locales de Plaza Aragón.
                 </p>
 
-                <dl className="mt-5 divide-y divide-crema/80 rounded-2xl border border-crema bg-arena/50 px-4">
+                <dl className="mt-3.5 grid grid-cols-1 divide-y divide-crema/80 rounded-2xl border border-crema bg-arena/50 px-3.5 sm:grid-cols-2 sm:gap-x-4 sm:divide-y-0 lg:grid-cols-1 lg:divide-y">
                   {TECHNICAL_SPECS.map((spec) => (
                     <div
                       key={spec.label}
-                      className="flex flex-col justify-between gap-1 py-3 sm:flex-row sm:items-center sm:gap-4"
+                      className="flex flex-col gap-0.5 border-b border-crema/80 py-2.5 last:border-b-0 sm:odd:border-b sm:nth-last-[-n+2]:border-b-0 lg:border-b-0"
                     >
-                      <dt className="text-xs font-bold uppercase tracking-wide text-piedra">
+                      <dt className="text-[10px] font-bold uppercase tracking-wider text-piedra">
                         {spec.label}
                       </dt>
-                      <dd className="text-sm font-bold text-tinta sm:text-right">
+                      <dd className="text-xs font-bold leading-snug text-tinta">
                         {spec.value}
                       </dd>
                     </div>
@@ -422,22 +403,25 @@ export default async function HomePage() {
                 </dl>
               </div>
 
-              <div className="mt-6 border-t border-crema/80 pt-5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-azul">
+              <div className="border-t border-crema/80 pt-3.5">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-azul">
                   Giro comercial recomendado
                 </h4>
-                <ul className="mt-3 flex flex-wrap gap-2" aria-label="Giros comerciales recomendados">
+                <ul
+                  className="mt-2.5 flex flex-wrap [flex-wrap:balance] gap-1.5"
+                  aria-label="Giros comerciales recomendados"
+                >
                   {RECOMMENDED_SECTORS.map((sector) => (
                     <li
                       key={sector}
-                      className="rounded-full bg-turquesa-claro/70 px-3.5 py-1.5 text-xs font-bold text-azul ring-1 ring-azul/15"
+                      className="rounded-full bg-turquesa-claro/70 px-2.5 py-1 text-[11px] font-bold text-azul ring-1 ring-azul/15"
                     >
                       {sector}
                     </li>
                   ))}
                 </ul>
               </div>
-            </div>
+            </aside>
           </div>
         </section>
 
