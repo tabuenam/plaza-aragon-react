@@ -1,4 +1,5 @@
 import { PlazaInteractiveSection } from "@/app/catalog-explorer";
+import { LeaseProcessSection } from "@/app/lease-process-section";
 import { Logo } from "@/components/logo";
 import { TechneticaCredit } from "@/components/technetica-credit";
 import { WhatsAppGlyph, WhatsAppInlineLogo } from "@/components/whatsapp-brand";
@@ -425,58 +426,10 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="defer-section border-y border-crema bg-white py-12 sm:py-16">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl">
-              <span className="eyebrow">Trámite Ágil y Transparente</span>
-              <h2 className="section-fluid-title mt-2 font-display font-bold text-azul">
-                Proceso de arrendamiento en 4 pasos
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-piedra sm:text-base">
-                Sin burocracia innecesaria: desde el primer contacto hasta la entrega de llaves y activación de tu Portal de Inquilinos.
-              </p>
-            </div>
-
-            <ol className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-4">
-              {LEASE_STEPS.map((item, index) => (
-                <li
-                  key={item.step}
-                  className="relative flex flex-col justify-between rounded-2xl border border-crema bg-arena/50 p-5"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center rounded-xl bg-azul px-3 py-1 font-display text-xs font-bold text-white">
-                        {item.step}
-                      </span>
-                      <span className="font-mono text-xs font-bold text-piedra/70" aria-hidden="true">
-                        0{index + 1}/04
-                      </span>
-                    </div>
-                    <h3 className="mt-4 font-display text-lg font-bold text-tinta">
-                      {item.title}
-                    </h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-piedra">
-                      {item.description}
-                    </p>
-                  </div>
-                  {index === 0 && (
-                    <div className="mt-4 border-t border-crema/70 pt-3">
-                      <a
-                        href={whatsappWaitlistUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-extrabold text-whatsapp-oscuro hover:underline"
-                      >
-                        <WhatsAppGlyph variant="green" className="h-4 w-4 shrink-0" size={16} />
-                        <span>Escribir por WhatsApp →</span>
-                      </a>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
+        <LeaseProcessSection
+          steps={LEASE_STEPS}
+          whatsappWaitlistUrl={whatsappWaitlistUrl}
+        />
 
         <section id="preguntas" className="defer-section scroll-mt-16 mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
           <div className="text-center">

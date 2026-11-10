@@ -268,5 +268,25 @@ describe("SEO and Generative Search Engine Configuration", () => {
         "page.tsx must not render the redundant external Google Maps button above the iframe"
       );
     });
+
+    it("preserves the 4-step leasing process Spanish copy, step order, and WhatsApp contact link", () => {
+      const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf-8");
+      const leaseSectionSource = fs.readFileSync(
+        path.resolve(process.cwd(), "src/app/lease-process-section.tsx"),
+        "utf-8"
+      );
+
+      assert.ok(leaseSectionSource.includes("Proceso de arrendamiento en 4 pasos"));
+      assert.ok(leaseSectionSource.includes("Trámite Ágil y Transparente"));
+      assert.ok(leaseSectionSource.includes("Escribir por WhatsApp →"));
+
+      const steps = ["Paso 01", "Paso 02", "Paso 03", "Paso 04"];
+      let lastIdx = -1;
+      for (const s of steps) {
+        const idx = pageSource.indexOf(s);
+        assert.ok(idx > lastIdx, `${s} must appear in sequential order in page.tsx`);
+        lastIdx = idx;
+      }
+    });
   });
 });
