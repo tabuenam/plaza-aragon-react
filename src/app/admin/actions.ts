@@ -15,6 +15,7 @@ import {
 export async function createAdminPaymentAction(_prevState: FormState, formData: FormData): Promise<FormState> {
   const user = await requireAdmin();
   const leaseId = String(formData.get("lease_id") ?? "").trim();
+  const paymentTypeRaw = String(formData.get("payment_type") ?? "rent").trim();
   const periodMonth = Number(formData.get("period_month"));
   const periodYear = Number(formData.get("period_year"));
   const amount = Number(formData.get("amount"));
@@ -23,6 +24,7 @@ export async function createAdminPaymentAction(_prevState: FormState, formData: 
 
   const validationError = validateAdminPaymentInput({
     leaseId,
+    paymentType: paymentTypeRaw,
     periodMonth,
     periodYear,
     amount,
@@ -51,6 +53,7 @@ export async function createAdminPaymentAction(_prevState: FormState, formData: 
     .from("payments")
     .select("id, status")
     .eq("lease_id", lease.id)
+    .eq("payment_type", paymentTypeRaw)
     .eq("period_year", periodYear)
     .eq("period_month", periodMonth)
     .neq("status", "rejected")
@@ -58,9 +61,10 @@ export async function createAdminPaymentAction(_prevState: FormState, formData: 
 
   if (existingPayment) {
     const estado = existingPayment.status === "verified" ? "ya fue verificado" : "está pendiente de revisión";
+    const tipoLabel = paymentTypeRaw === "electricity" ? "recibo de energía eléctrica" : "pago de renta";
     return {
       ok: false,
-      message: `Ya existe un pago registrado para este local en el período seleccionado que ${estado}.`,
+      message: `Ya existe un ${tipoLabel} registrado para este local en el período seleccionado que ${estado}.`,
     };
   }
 
@@ -100,6 +104,7 @@ export async function createAdminPaymentAction(_prevState: FormState, formData: 
 
   const { error: insertError } = await supabase.from("payments").insert({
     lease_id: lease.id,
+    payment_type: paymentTypeRaw,
     amount,
     period_month: periodMonth,
     period_year: periodYear,
@@ -124,7 +129,10 @@ export async function createAdminPaymentAction(_prevState: FormState, formData: 
 
   return {
     ok: true,
-    message: "Pago registrado y verificado exitosamente.",
+    message:
+      paymentTypeRaw === "electricity"
+        ? "Recibo de energía eléctrica registrado y verificado exitosamente."
+        : "Pago registrado y verificado exitosamente.",
   };
 }
 

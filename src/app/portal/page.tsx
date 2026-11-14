@@ -4,7 +4,14 @@ import { ContractAttachmentsView } from "@/components/contract-attachments-view"
 import { StatusBadge } from "@/components/status-badge";
 import { requireTenant } from "@/lib/auth";
 import { getTenantLeaseWithSpace, getTenantPayments } from "@/lib/data";
-import { currentPeriod, daysUntil, formatDate, formatMoney, formatPeriod } from "@/lib/format";
+import {
+  currentPeriod,
+  daysUntil,
+  formatDate,
+  formatMoney,
+  formatPeriod,
+  getElectricityDelinquentLeases,
+} from "@/lib/format";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 
@@ -52,51 +59,118 @@ export default async function TenantPortalPage() {
   }));
 
   const cur = currentPeriod();
-  const currentMonthPayment = payments.find(
-    (p) => p.period_month === cur.month && p.period_year === cur.year
-  );
+  const rentPayments = payments.filter((p) => (p.payment_type ?? "rent") === "rent");
+  const electricityPayments = payments.filter((p) => p.payment_type === "electricity");
+
+  const currentMonthRent =
+    rentPayments.find((p) => p.period_month === cur.month && p.period_year === cur.year && p.status !== "rejected") ??
+    rentPayments.find((p) => p.period_month === cur.month && p.period_year === cur.year);
+
+  const currentMonthElectricity =
+    electricityPayments.find(
+      (p) => p.period_month === cur.month && p.period_year === cur.year && p.status !== "rejected"
+    ) ?? electricityPayments.find((p) => p.period_month === cur.month && p.period_year === cur.year);
+
+  const electricityDelinquent = getElectricityDelinquentLeases([lease], electricityPayments, cur);
   const remainingDays = daysUntil(lease.end_date);
 
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* ───────────── WELCOME & CURRENT PERIOD STATUS BANNER ───────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <span className="eyebrow">Arrendatario Activo · Olanchito</span>
           <h1 className="mt-1 font-display text-2xl font-bold text-azul sm:text-3xl">
             Hola, {lease.tenant?.name || "Inquilino"}
           </h1>
           <p className="mt-1 text-sm text-piedra">
-            Gestione sus comprobantes de renta y consulte la documentación de <strong>{lease.space.name}</strong>.
+            Gestione sus comprobantes de renta y recibos de energía eléctrica de <strong>{lease.space.name}</strong>.
           </p>
         </div>
 
-        {/* Current Month Pill Card */}
-        <div className="flex items-center gap-3 self-start rounded-2xl border border-crema bg-white px-4 py-3 shadow-2xs sm:self-auto">
-          <div>
-            <span className="block text-[10px] font-bold tracking-wider text-piedra uppercase">
-              Mes en curso · {formatPeriod(cur)}
-            </span>
-            {currentMonthPayment ? (
-              <div className="mt-1 flex items-center gap-2">
-                <StatusBadge status={currentMonthPayment.status} />
-                <span className="text-xs font-semibold tabular-nums text-tinta">
-                  {formatMoney(currentMonthPayment.amount)}
-                </span>
-              </div>
-            ) : (
-              <div className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-arena px-2.5 py-0.5 text-[11px] font-bold text-piedra ring-1 ring-crema uppercase">
-                  Sin comprobante este mes
-                </span>
-                <a href="#registrar-pago" className="text-xs font-bold text-barro hover:underline">
-                  Subir ahora ↓
-                </a>
-              </div>
-            )}
+        {/* Current Month Status Pills */}
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <div className="flex items-center gap-3 rounded-2xl border border-crema bg-white px-4 py-3 shadow-2xs">
+            <div>
+              <span className="block text-[10px] font-bold tracking-wider text-piedra uppercase">
+                Renta · {formatPeriod(cur)}
+              </span>
+              {currentMonthRent ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <StatusBadge status={currentMonthRent.status} />
+                  <span className="text-xs font-semibold tabular-nums text-tinta">
+                    {formatMoney(currentMonthRent.amount)}
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-arena px-2.5 py-0.5 text-[11px] font-bold text-piedra ring-1 ring-crema uppercase">
+                    Sin comprobante
+                  </span>
+                  <a href="#registrar-pago" className="text-xs font-bold text-barro hover:underline">
+                    Subir ↓
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-crema bg-white px-4 py-3 shadow-2xs">
+            <div>
+              <span className="block text-[10px] font-bold tracking-wider text-piedra uppercase">
+                Energía Eléctrica · {formatPeriod(cur)}
+              </span>
+              {currentMonthElectricity ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <StatusBadge status={currentMonthElectricity.status} />
+                  <span className="text-xs font-semibold tabular-nums text-tinta">
+                    {formatMoney(currentMonthElectricity.amount)}
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-maiz-claro px-2.5 py-0.5 text-[11px] font-bold text-[#734d08] ring-1 ring-maiz/35 uppercase">
+                    Pendiente este mes
+                  </span>
+                  <a href="#registrar-pago" className="text-xs font-bold text-barro hover:underline">
+                    Subir ↓
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {electricityDelinquent.length > 0 && (
+        <div
+          role="alert"
+          className="card border-2 border-barro bg-barro-claro/35 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="space-y-1">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-barro uppercase">
+              <span className="h-2 w-2 rounded-full bg-barro animate-pulse" />
+              Aviso Importante · Energía Eléctrica
+            </span>
+            <h2 className="font-display text-base font-bold text-tinta sm:text-lg">
+              Sin recibos de energía eléctrica en los últimos 3 meses
+            </h2>
+            <p className="text-xs text-piedra sm:text-sm">
+              No se registran comprobantes de electricidad para{" "}
+              <strong className="text-tinta">
+                {electricityDelinquent[0].missingPeriods.map((p) => formatPeriod(p)).join(", ")}
+              </strong>
+              . Por favor suba su recibo pagado para mantener su módulo al día.
+            </p>
+          </div>
+          <a
+            href="#registrar-pago"
+            className="btn-accent min-h-11 shrink-0 px-4 py-2 text-xs sm:text-sm"
+          >
+            Subir recibo de luz ↓
+          </a>
+        </div>
+      )}
 
       {/* ───────────── LEASE ARCHITECTURAL CREDENTIAL CARD ───────────── */}
       <section className="card relative overflow-hidden bg-gradient-to-br from-azul-oscuro via-azul to-[#0e4d7e] text-white shadow-md">
@@ -178,11 +252,10 @@ export default async function TenantPortalPage() {
         {/* Left Column: Upload Payment Form */}
         <section id="registrar-pago" className="card scroll-mt-20 lg:sticky lg:top-20 lg:col-span-5">
           <div className="mb-5 border-b border-crema/80 pb-4">
-            <span className="eyebrow">Reporte de Transferencia</span>
-            <h2 className="mt-1 font-display text-xl font-bold text-azul">Registrar Pago de Renta</h2>
+            <span className="eyebrow">Reporte de Pagos y Recibos</span>
+            <h2 className="mt-1 font-display text-xl font-bold text-azul">Registrar Comprobante de Pago</h2>
             <p className="mt-1 text-xs text-piedra sm:text-sm">
-              Tome una fotografía o suba la captura de su transferencia bancaria. La imagen se optimiza
-              automáticamente antes de enviarse.
+              Suba la captura de su transferencia de renta o su recibo pagado de energía eléctrica por separado.
             </p>
           </div>
 

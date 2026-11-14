@@ -1,5 +1,6 @@
 export type SpaceStatus = "available" | "occupied" | "construction";
 export type PaymentStatus = "pending" | "verified" | "rejected";
+export type PaymentType = "rent" | "electricity";
 
 export type Space = {
   id: string;
@@ -39,6 +40,7 @@ export type Lease = {
 export type Payment = {
   id: string;
   lease_id: string;
+  payment_type: PaymentType;
   amount: number;
   payment_date: string;
   period_month: number;

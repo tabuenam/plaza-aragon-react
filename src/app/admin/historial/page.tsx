@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { getAdminPayments, type AdminPayment } from "@/lib/data";
 import { currentPeriod, formatMoney, MONTHS } from "@/lib/format";
+import type { PaymentType } from "@/lib/types";
 import {
   SpacePaymentsAccordion,
   type SpaceColorConfig,
@@ -193,8 +194,14 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
   const searchParams = await props.searchParams;
   const cur = currentPeriod();
   const selectedYear = searchParams.ano ? Number(searchParams.ano) : cur.year;
+  const selectedType: PaymentType = searchParams.tipo === "electricity" ? "electricity" : "rent";
+  const isElectricity = selectedType === "electricity";
 
-  const payments = await getAdminPayments(selectedYear);
+  const allYearPayments = await getAdminPayments(selectedYear);
+  const rentCount = allYearPayments.filter((p) => (p.payment_type ?? "rent") === "rent").length;
+  const electricityCount = allYearPayments.filter((p) => p.payment_type === "electricity").length;
+
+  const payments = allYearPayments.filter((p) => (p.payment_type ?? "rent") === selectedType);
   const spaceGroups = buildSpaceGroups(payments);
 
   const totalVerified = payments
@@ -240,12 +247,20 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <span className="eyebrow">Control Financiero · HNL</span>
+          <span className="eyebrow">
+            {isElectricity
+              ? "Control de Energía Eléctrica · Cuenta Separada"
+              : "Control Financiero · Renta HNL"}
+          </span>
           <h1 className="mt-1 font-display text-2xl font-bold text-azul sm:text-3xl">
-            Historial Contable Anual · {selectedYear}
+            {isElectricity
+              ? `Historial de Energía Eléctrica · ${selectedYear}`
+              : `Historial Contable de Renta · ${selectedYear}`}
           </h1>
           <p className="mt-1 text-sm text-piedra">
-            Registro cronológico de cobros e ingresos verificados por arrendamiento.
+            {isElectricity
+              ? "Registro cronológico de recibos de energía eléctrica por módulo (no suma a los ingresos de renta)."
+              : "Registro cronológico de cobros e ingresos verificados por arrendamiento."}
           </p>
         </div>
 
@@ -253,7 +268,7 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
           {years.map((y) => (
             <Link
               key={y}
-              href={`/admin/historial?ano=${y}`}
+              href={`/admin/historial?tipo=${selectedType}&ano=${y}`}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                 y === selectedYear
                   ? "bg-azul text-white shadow-2xs"
@@ -266,15 +281,69 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
         </div>
       </div>
 
+      {/* ───────────── ACCOUNT CATEGORY SWITCHER ───────────── */}
+      <nav
+        aria-label="Seleccionar cuenta histórica"
+        className="grid grid-cols-1 gap-2 rounded-2xl border border-crema bg-white p-1.5 shadow-2xs sm:grid-cols-2"
+      >
+        <Link
+          href={`/admin/historial?tipo=rent&ano=${selectedYear}`}
+          aria-current={!isElectricity ? "page" : undefined}
+          className={`flex min-h-11 items-center justify-between gap-3 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-200 ${
+            !isElectricity
+              ? "bg-azul text-white shadow-xs"
+              : "bg-arena/50 text-tinta hover:bg-arena"
+          }`}
+        >
+          <span>Cuenta de Renta Mensual</span>
+          <span
+            className={`rounded-full px-2.5 py-0.5 font-mono text-xs ${
+              !isElectricity ? "bg-white/20 text-white" : "bg-white text-azul ring-1 ring-crema"
+            }`}
+          >
+            {rentCount}
+          </span>
+        </Link>
+        <Link
+          href={`/admin/historial?tipo=electricity&ano=${selectedYear}`}
+          aria-current={isElectricity ? "page" : undefined}
+          className={`flex min-h-11 items-center justify-between gap-3 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-200 ${
+            isElectricity
+              ? "bg-maiz text-azul-oscuro shadow-xs ring-1 ring-maiz/50"
+              : "bg-arena/50 text-tinta hover:bg-arena"
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden="true">⚡</span>
+            <span>Energía Eléctrica (Separada)</span>
+          </span>
+          <span
+            className={`rounded-full px-2.5 py-0.5 font-mono text-xs ${
+              isElectricity
+                ? "bg-azul-oscuro/15 text-azul-oscuro"
+                : "bg-white text-[#734d08] ring-1 ring-crema"
+            }`}
+          >
+            {electricityCount}
+          </span>
+        </Link>
+      </nav>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="card bg-white p-5">
           <p className="text-[11px] font-bold uppercase tracking-wider text-piedra">
-            Total Recaudado ({selectedYear})
+            {isElectricity
+              ? `Total Reportado en Luz (${selectedYear})`
+              : `Total Recaudado Renta (${selectedYear})`}
           </p>
           <p className="mt-2 font-display text-2xl font-bold tabular-nums text-selva sm:text-3xl">
             {formatMoney(totalVerified)}
           </p>
-          <p className="mt-1 text-xs text-piedra">Pagos con comprobante verificado</p>
+          <p className="mt-1 text-xs text-piedra">
+            {isElectricity
+              ? "Recibos de energía con comprobante verificado"
+              : "Pagos de renta con comprobante verificado"}
+          </p>
         </div>
 
         <div className="card bg-white p-5">
@@ -284,12 +353,16 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
           <p className="mt-2 font-display text-2xl font-bold tabular-nums text-[#734d08] sm:text-3xl">
             {formatMoney(totalPending)}
           </p>
-          <p className="mt-1 text-xs text-piedra">Transferencias pendientes de validar</p>
+          <p className="mt-1 text-xs text-piedra">
+            {isElectricity
+              ? "Recibos eléctricos pendientes de validar"
+              : "Transferencias pendientes de validar"}
+          </p>
         </div>
 
         <div className="card bg-white p-5">
           <p className="text-[11px] font-bold uppercase tracking-wider text-piedra">
-            Transacciones Registradas
+            {isElectricity ? "Recibos Registrados" : "Transacciones Registradas"}
           </p>
           <p className="mt-2 font-display text-2xl font-bold tabular-nums text-azul sm:text-3xl">
             {payments.length}
@@ -303,7 +376,9 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="font-display text-lg font-bold text-azul">
-              Recaudación Mensual Verificada · {selectedYear}
+              {isElectricity
+                ? `Consumo Eléctrico Verificado por Mes · ${selectedYear}`
+                : `Recaudación Mensual Verificada · ${selectedYear}`}
             </h2>
             <p className="text-xs text-piedra">
               Toque cualquier mes para revisar sus comprobantes en el módulo de verificación.
@@ -351,7 +426,7 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
             return (
               <Link
                 key={m.monthNumber}
-                href={`/admin/pagos?mes=${m.monthNumber}&ano=${selectedYear}`}
+                href={`/admin/pagos?tipo=${selectedType}&mes=${m.monthNumber}&ano=${selectedYear}`}
                 title={monthTitle}
                 aria-label={monthTitle}
                 className="group flex flex-col items-center rounded-xl border border-crema/70 bg-arena/40 p-2 transition hover:border-azul/30 hover:bg-white"
@@ -390,10 +465,11 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
       </section>
 
       <SpacePaymentsAccordion
-        key={selectedYear}
+        key={`${selectedYear}-${selectedType}`}
         groups={spaceGroups}
         selectedYear={selectedYear}
         totalPaymentsCount={payments.length}
+        paymentType={selectedType}
       />
     </div>
   );

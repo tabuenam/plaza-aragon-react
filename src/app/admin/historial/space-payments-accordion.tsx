@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { AdminPayment } from "@/lib/data";
 import { formatDate, formatMoney, formatPeriod } from "@/lib/format";
+import type { PaymentType } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
 
 export type SpaceColorConfig = {
@@ -30,11 +31,14 @@ export function SpacePaymentsAccordion({
   groups,
   selectedYear,
   totalPaymentsCount,
+  paymentType = "rent",
 }: {
   groups: SpacePaymentGroup[];
   selectedYear: number;
   totalPaymentsCount: number;
+  paymentType?: PaymentType;
 }) {
+  const isElectricity = paymentType === "electricity";
   // All space groups start collapsed by default for a compact overview.
   const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
 
@@ -61,11 +65,12 @@ export function SpacePaymentsAccordion({
       <div className="flex flex-col gap-3 border-b border-crema bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-lg font-bold text-azul">
-            Libro de Entradas
+            {isElectricity ? "Registro de Recibos · Energía Eléctrica" : "Libro de Entradas · Renta"}
           </h2>
           <p className="text-xs text-piedra">
-            Listado detallado de transferencias agrupadas por local ({totalPaymentsCount}{" "}
-            {totalPaymentsCount === 1 ? "registro" : "registros"}).
+            {isElectricity
+              ? `Listado detallado de recibos eléctricos agrupados por local (${totalPaymentsCount} ${totalPaymentsCount === 1 ? "registro" : "registros"}).`
+              : `Listado detallado de transferencias de renta agrupadas por local (${totalPaymentsCount} ${totalPaymentsCount === 1 ? "registro" : "registros"}).`}
           </p>
         </div>
 
@@ -83,7 +88,9 @@ export function SpacePaymentsAccordion({
 
       {groups.length === 0 ? (
         <div className="p-12 text-center text-sm text-piedra">
-          No hay registros de transferencias para el año {selectedYear}.
+          {isElectricity
+            ? `No hay recibos de energía eléctrica registrados para el año ${selectedYear}.`
+            : `No hay registros de transferencias de renta para el año ${selectedYear}.`}
         </div>
       ) : (
         <div className="year-accordion space-y-3 p-4 sm:p-5">

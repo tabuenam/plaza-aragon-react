@@ -47,10 +47,19 @@ export function PaymentReviewCard({ payment }: { payment: AdminPayment }) {
     <div data-testid={`payment-review-card-${payment.id}`} className="card border border-crema space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-display text-lg font-bold text-azul">
               {payment.lease?.space?.name || "Local"}
             </h3>
+            {payment.payment_type === "electricity" ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-maiz-claro px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-[#734d08] ring-1 ring-maiz/40 uppercase">
+                ⚡ Energía Eléctrica
+              </span>
+            ) : (
+              <span className="inline-flex shrink-0 items-center rounded-full bg-turquesa-claro/60 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-azul ring-1 ring-turquesa/30 uppercase">
+                Renta Mensual
+              </span>
+            )}
             <StatusBadge status={payment.status} />
           </div>
           <p className="text-sm font-semibold text-tinta mt-0.5">

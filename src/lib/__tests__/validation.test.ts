@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  isValidPaymentType,
   isValidSpaceStatus,
   sanitizeStorageFileName,
   validateAdminPaymentInput,
@@ -36,8 +37,13 @@ describe("domain validation utilities", () => {
       assert.equal(err, null);
     });
 
-    it("accepts valid payment submission input", () => {
+    it("accepts valid payment submission input for rent and electricity", () => {
+      assert.equal(isValidPaymentType("rent"), true);
+      assert.equal(isValidPaymentType("electricity"), true);
+      assert.equal(isValidPaymentType("water"), false);
+
       const err = validatePaymentInput({
+        paymentType: "rent",
         periodMonth: 10,
         periodYear: 2026,
         amount: 8000,
@@ -45,11 +51,21 @@ describe("domain validation utilities", () => {
       });
       assert.equal(err, null);
 
-      const adminErr = validateAdminPaymentInput({
-        leaseId: "lease-1",
+      const electricityErr = validatePaymentInput({
+        paymentType: "electricity",
         periodMonth: 11,
         periodYear: 2026,
-        amount: 8500,
+        amount: 1450.5,
+        hasFile: true,
+      });
+      assert.equal(electricityErr, null);
+
+      const adminErr = validateAdminPaymentInput({
+        leaseId: "lease-1",
+        paymentType: "electricity",
+        periodMonth: 11,
+        periodYear: 2026,
+        amount: 1450.5,
         hasFile: true,
       });
       assert.equal(adminErr, null);
@@ -162,7 +178,17 @@ describe("domain validation utilities", () => {
       );
     });
 
-    it("rejects payment inputs with invalid month, year, amount, or missing receipt file", () => {
+    it("rejects payment inputs with invalid paymentType, month, year, amount, or missing receipt file", () => {
+      assert.equal(
+        validatePaymentInput({
+          paymentType: "gas",
+          periodMonth: 5,
+          periodYear: 2026,
+          amount: 500,
+          hasFile: true,
+        })?.ok,
+        false
+      );
       assert.equal(
         validatePaymentInput({ periodMonth: 0, periodYear: 2026, amount: 8000, hasFile: true })?.ok,
         false

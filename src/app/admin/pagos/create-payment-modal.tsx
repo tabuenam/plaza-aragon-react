@@ -9,7 +9,7 @@ import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { compressImage } from "@/lib/compress-image";
 import { currentPeriod, formatMoney, MONTHS } from "@/lib/format";
-import type { AdminLease, FormState } from "@/lib/types";
+import type { AdminLease, FormState, PaymentType } from "@/lib/types";
 
 const initialState: FormState = { ok: true, message: "" };
 
@@ -17,20 +17,25 @@ export function CreatePaymentModal({
   activeLeases,
   defaultMonth,
   defaultYear,
+  defaultPaymentType = "rent",
 }: {
   activeLeases: AdminLease[];
   defaultMonth: number;
   defaultYear: number;
+  defaultPaymentType?: PaymentType;
 }) {
   const { notify } = useAdminToast();
   const dialogTitleId = useId();
   const [isOpen, setIsOpen] = useState(false);
 
   const defaultLease = activeLeases[0];
+  const [paymentType, setPaymentType] = useState<PaymentType>(defaultPaymentType);
   const [selectedLeaseId, setSelectedLeaseId] = useState(defaultLease?.id ?? "");
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [selectedYear, setSelectedYear] = useState(defaultYear);
-  const [amount, setAmount] = useState<number | string>(defaultLease?.monthly_rent ?? "");
+  const [amount, setAmount] = useState<number | string>(
+    defaultPaymentType === "electricity" ? "" : (defaultLease?.monthly_rent ?? "")
+  );
 
   const [stagedFile, setStagedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -67,8 +72,9 @@ export function CreatePaymentModal({
 
   function handleOpen() {
     const first = activeLeases[0];
+    setPaymentType(defaultPaymentType);
     setSelectedLeaseId(first?.id ?? "");
-    setAmount(first?.monthly_rent ?? "");
+    setAmount(defaultPaymentType === "electricity" ? "" : (first?.monthly_rent ?? ""));
     setSelectedMonth(defaultMonth);
     setSelectedYear(defaultYear);
     handleClearFile();
@@ -83,8 +89,19 @@ export function CreatePaymentModal({
   function handleLeaseChange(newLeaseId: string) {
     setSelectedLeaseId(newLeaseId);
     const found = activeLeases.find((l) => l.id === newLeaseId);
-    if (found) {
+    if (found && paymentType === "rent") {
       setAmount(found.monthly_rent);
+    }
+  }
+
+  function handlePaymentTypeChange(nextType: PaymentType) {
+    setPaymentType(nextType);
+    if (nextType === "electricity") {
+      if (currentLease && Number(amount) === Number(currentLease.monthly_rent)) {
+        setAmount("");
+      }
+    } else if (currentLease && String(amount).trim() === "") {
+      setAmount(currentLease.monthly_rent);
     }
   }
 
@@ -130,12 +147,15 @@ export function CreatePaymentModal({
 
     const form = e.currentTarget;
     const formData = new FormData(form);
+    formData.set("payment_type", paymentType);
     formData.set("receipt", stagedFile);
 
     startTransition(async () => {
       await formAction(formData);
     });
   }
+
+  const isElectricity = paymentType === "electricity";
 
   return (
     <>
@@ -161,10 +181,12 @@ export function CreatePaymentModal({
           <header className="flex items-center justify-between border-b border-crema px-5 py-4 sm:px-6">
             <div>
               <h2 id={dialogTitleId} className="font-display text-lg font-bold text-azul sm:text-xl">
-                Registrar Pago de Local
+                {isElectricity ? "Registrar Recibo de Energía Eléctrica" : "Registrar Pago de Local"}
               </h2>
               <p className="text-xs text-piedra">
-                Suba el comprobante mensual de cualquier local arrendado. Quedará verificado automáticamente.
+                {isElectricity
+                  ? "Suba el recibo de luz de un módulo arrendado en cuenta separada de la renta. Quedará verificado."
+                  : "Suba el comprobante mensual de cualquier local arrendado. Quedará verificado automáticamente."}
               </p>
             </div>
             <button
@@ -185,6 +207,42 @@ export function CreatePaymentModal({
             data-testid="admin-payment-form"
             className="flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6"
           >
+            <input type="hidden" name="payment_type" value={paymentType} />
+
+            <div>
+              <span className="label">Cuenta / Tipo de comprobante</span>
+              <div
+                role="group"
+                aria-label="Tipo de comprobante"
+                className="grid grid-cols-2 gap-1.5 rounded-2xl border border-crema bg-arena p-1"
+              >
+                <button
+                  type="button"
+                  aria-pressed={!isElectricity}
+                  onClick={() => handlePaymentTypeChange("rent")}
+                  className={`min-h-11 rounded-xl px-3 py-2 text-xs font-bold transition-all duration-200 cursor-pointer ${
+                    !isElectricity
+                      ? "bg-azul text-white shadow-xs"
+                      : "text-piedra hover:bg-white/80 hover:text-tinta"
+                  }`}
+                >
+                  Cuota de Renta
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={isElectricity}
+                  onClick={() => handlePaymentTypeChange("electricity")}
+                  className={`min-h-11 rounded-xl px-3 py-2 text-xs font-bold transition-all duration-200 cursor-pointer ${
+                    isElectricity
+                      ? "bg-maiz text-azul-oscuro shadow-xs ring-1 ring-maiz/50"
+                      : "text-piedra hover:bg-white/80 hover:text-tinta"
+                  }`}
+                >
+                  ⚡ Energía Eléctrica
+                </button>
+              </div>
+            </div>
+
             <div>
               <label htmlFor="admin-payment-lease" className="label">
                 Local comercial arrendado
@@ -215,7 +273,7 @@ export function CreatePaymentModal({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="admin-period-month" className="label">
-                  Mes de renta
+                  {isElectricity ? "Mes de facturación" : "Mes de renta"}
                 </label>
                 <select
                   id="admin-period-month"
@@ -255,9 +313,9 @@ export function CreatePaymentModal({
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <label htmlFor="admin-payment-amount" className="text-sm font-semibold text-tinta">
-                  Monto pagado (HNL)
+                  {isElectricity ? "Monto del recibo eléctrico (HNL)" : "Monto pagado (HNL)"}
                 </label>
-                {currentLease && (
+                {currentLease && !isElectricity && (
                   <span className="text-xs font-medium text-piedra">
                     Cuota pactada: <strong className="text-azul">{formatMoney(currentLease.monthly_rent)}</strong>
                   </span>
@@ -277,6 +335,7 @@ export function CreatePaymentModal({
                   inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  placeholder={isElectricity ? "Monto pagado en recibo ENEE" : undefined}
                   className="field min-h-11 pl-9 font-display font-bold tabular-nums text-sm"
                 />
               </div>

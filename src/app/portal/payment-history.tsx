@@ -12,7 +12,7 @@ import {
   MONTHS,
   shortMonth,
 } from "@/lib/format";
-import type { Payment, PaymentStatus } from "@/lib/types";
+import type { Payment, PaymentStatus, PaymentType } from "@/lib/types";
 
 export type PortalPayment = Payment & {
   signedUrl?: string;
@@ -58,8 +58,7 @@ export function PaymentHistory({
   currentYear: number;
   currentMonth: number;
 }) {
-  const allYearGroups = useMemo(() => groupPaymentsByYear(payments), [payments]);
-
+  const [selectedType, setSelectedType] = useState<PaymentType>("rent");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedYear, setSelectedYear] = useState<"all" | number>("all");
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
@@ -70,12 +69,32 @@ export function PaymentHistory({
 
   const dialogTitleId = useId();
 
+  const typeCounts = useMemo(() => {
+    let rent = 0;
+    let electricity = 0;
+    for (const p of payments) {
+      if ((p.payment_type ?? "rent") === "electricity") electricity += 1;
+      else rent += 1;
+    }
+    return { rent, electricity };
+  }, [payments]);
+
+  const typeScopedPayments = useMemo(
+    () => payments.filter((p) => (p.payment_type ?? "rent") === selectedType),
+    [payments, selectedType]
+  );
+
+  const allYearGroups = useMemo(
+    () => groupPaymentsByYear(typeScopedPayments),
+    [typeScopedPayments]
+  );
+
   const yearScopedPayments = useMemo(
     () =>
       selectedYear === "all"
-        ? payments
-        : payments.filter((p) => p.period_year === selectedYear),
-    [payments, selectedYear]
+        ? typeScopedPayments
+        : typeScopedPayments.filter((p) => p.period_year === selectedYear),
+    [typeScopedPayments, selectedYear]
   );
 
   const statusCounts = useMemo(() => {
@@ -159,29 +178,94 @@ export function PaymentHistory({
     activePayment?.receipt_path?.toLowerCase().endsWith(".pdf")
   );
 
+  function handleSelectType(nextType: PaymentType) {
+    setSelectedType(nextType);
+    setSelectedYear("all");
+    setSelectedStatus("all");
+  }
+
   return (
     <div className="space-y-5">
+      {/* ───────────── CATEGORY ACCOUNT SWITCHER ───────────── */}
+      <div
+        role="tablist"
+        aria-label="Cuentas de comprobantes"
+        className="grid grid-cols-2 gap-1.5 rounded-2xl border border-crema bg-arena p-1"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={selectedType === "rent"}
+          onClick={() => handleSelectType("rent")}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all duration-200 cursor-pointer sm:text-sm ${
+            selectedType === "rent"
+              ? "bg-azul text-white shadow-xs"
+              : "text-piedra hover:bg-white/80 hover:text-tinta"
+          }`}
+        >
+          <span>Renta Mensual</span>
+          <span
+            className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${
+              selectedType === "rent"
+                ? "bg-white/20 text-white"
+                : "bg-white text-azul ring-1 ring-crema"
+            }`}
+          >
+            {typeCounts.rent}
+          </span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={selectedType === "electricity"}
+          onClick={() => handleSelectType("electricity")}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all duration-200 cursor-pointer sm:text-sm ${
+            selectedType === "electricity"
+              ? "bg-maiz text-azul-oscuro shadow-xs ring-1 ring-maiz/50"
+                : "text-piedra hover:bg-white/80 hover:text-tinta"
+          }`}
+        >
+          <span className="truncate">Energía Eléctrica</span>
+          <span
+            className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${
+              selectedType === "electricity"
+                ? "bg-azul-oscuro/15 text-azul-oscuro"
+                : "bg-white text-[#734d08] ring-1 ring-crema"
+            }`}
+          >
+            {typeCounts.electricity}
+          </span>
+        </button>
+      </div>
+
       {/* ───────────── HEADER & VIEW SWITCHER ───────────── */}
       <div className="flex flex-col gap-3 border-b border-crema/80 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <span className="eyebrow">Estado de Cuenta</span>
+          <span className="eyebrow">
+            {selectedType === "electricity" ? "Servicio Eléctrico del Módulo" : "Estado de Cuenta"}
+          </span>
           <h2
             id="estado-de-cuenta-heading"
             className="mt-1 font-display text-xl font-bold text-azul"
           >
-            Historial de Pagos Reportados
+            {selectedType === "electricity"
+              ? "Historial de Energía Eléctrica"
+              : "Historial de Pagos de Renta"}
           </h2>
           <p className="mt-0.5 text-xs text-piedra">
-            Consulte sus comprobantes agrupados por año y su estado de verificación.
+            {selectedType === "electricity"
+              ? "Recibos mensuales de electricidad registrados por separado de su cuenta de renta."
+              : "Consulte sus comprobantes de cuota mensual agrupados por año y su estado de verificación."}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <span className="rounded-xl bg-arena px-3 py-1.5 font-mono text-xs font-bold text-azul ring-1 ring-crema">
-            {payments.length} {payments.length === 1 ? "registro" : "registros"}
+            {typeScopedPayments.length}{" "}
+            {typeScopedPayments.length === 1 ? "registro" : "registros"}
           </span>
 
-          {payments.length > 0 && (
+          {typeScopedPayments.length > 0 && (
             <div
               role="group"
               aria-label="Modo de visualización"
@@ -244,13 +328,17 @@ export function PaymentHistory({
         </div>
       </div>
 
-      {payments.length === 0 ? (
+      {typeScopedPayments.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-crema bg-arena/40 p-10 text-center">
           <p className="font-display text-base font-bold text-tinta">
-            Sin comprobantes registrados aún
+            {selectedType === "electricity"
+              ? "Sin recibos de energía eléctrica registrados aún"
+              : "Sin comprobantes de renta registrados aún"}
           </p>
           <p className="mt-1 text-xs text-piedra">
-            Utilice el formulario para subir su primer comprobante de transferencia bancaria.
+            {selectedType === "electricity"
+              ? "Seleccione «Energía Eléctrica» en el formulario para subir su primer recibo mensual pagado."
+              : "Utilice el formulario para subir su primer comprobante de transferencia bancaria."}
           </p>
         </div>
       ) : (
@@ -274,7 +362,7 @@ export function PaymentHistory({
                         : "border border-crema bg-arena/60 text-piedra hover:bg-arena hover:text-azul"
                     }`}
                   >
-                    Todos ({payments.length})
+                    Todos ({typeScopedPayments.length})
                   </button>
                   {allYearGroups.map((g) => (
                     <button
@@ -744,7 +832,9 @@ export function PaymentHistory({
                     id={dialogTitleId}
                     className="font-display text-base font-bold text-azul"
                   >
-                    Comprobante ·{" "}
+                    {activePayment.payment_type === "electricity"
+                      ? "Recibo de Energía · "
+                      : "Comprobante de Renta · "}
                     {formatPeriod({
                       month: activePayment.period_month,
                       year: activePayment.period_year,
