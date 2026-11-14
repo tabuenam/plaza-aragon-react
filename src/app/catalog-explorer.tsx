@@ -4,18 +4,34 @@ import { SpaceGallery } from "@/app/space-gallery";
 import { StatusBadge } from "@/components/status-badge";
 import { WhatsAppGlyph, WhatsAppStackedLogo } from "@/components/whatsapp-brand";
 import {
+  buildSpaceShareData,
   cleanPhoneDigits,
   computeCatalogStats,
   filterSpaces,
   getSpaceCatalogTags,
+  getSpaceDisplayMeta,
   getSpaceHighlights,
   type FilterOption,
 } from "@/lib/catalog";
 import { formatMoney } from "@/lib/format";
 import type { Space } from "@/lib/types";
-import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type MouseEvent,
+} from "react";
 
-export { computeCatalogStats, filterSpaces, getSpaceHighlights, type FilterOption };
+export {
+  computeCatalogStats,
+  filterSpaces,
+  getSpaceDisplayMeta,
+  getSpaceHighlights,
+  type FilterOption,
+};
 
 const BUSINESS_SECTORS = [
   "Farmacia / Salud",
@@ -28,43 +44,43 @@ const BUSINESS_SECTORS = [
   "Otro giro comercial",
 ];
 
-function getSpaceDisplayMeta(space: Space, index: number) {
-  const order = space.sort_order || index + 1;
-  const lower = space.name.toLowerCase();
-
-  if (lower.includes("pacura") || order === 1) {
-    return {
-      title: "Local Pacura",
-      subtitle: "Local 1 - Esquinero",
-      fullLabel: "Local Pacura (Local 1 - Esquinero)",
-      area: "70 m²",
-      description:
-        space.description && space.description.length > 20
-          ? space.description
-          : "Módulo comercial esquinero en planta baja de 70 m² con doble ángulo visual, vitrina panorámica hacia la Avenida el Caliche, baño privado y medidor eléctrico propio.",
-    };
+function legacyCopy(text: string): boolean {
+  const field = Object.assign(document.createElement("textarea"), { value: text });
+  field.setAttribute("readonly", "");
+  field.style.cssText = "position:fixed;inset-block-start:0;opacity:0";
+  document.body.append(field);
+  field.select();
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    field.remove();
   }
+}
 
-  if (lower.includes("corozal") || order === 2) {
-    return {
-      title: "Local Corozal",
-      subtitle: "Local 2 - Central Frontal",
-      fullLabel: "Local Corozal (Local 2 - Central Frontal)",
-      area: "70 m²",
-      description:
-        space.description && space.description.length > 20
-          ? space.description
-          : "Módulo comercial central frontal de 70 m² en planta baja con acceso directo a pie de calle, vitrina panorámica de vidrio templado, porcelanato y A/C instalado.",
-    };
+function getSlideTargetLeft(track: HTMLElement, slide: HTMLElement): number {
+  const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+  const align = getComputedStyle(slide).scrollSnapAlign;
+  const raw = align.includes("center")
+    ? slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2
+    : slide.offsetLeft;
+  return Math.max(0, Math.min(maxScroll, raw));
+}
+
+function getNearestSlideIndex(track: HTMLElement): number {
+  const slides = Array.from(track.children) as HTMLElement[];
+  if (slides.length === 0) return 0;
+  let nearestIdx = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < slides.length; i += 1) {
+    const dist = Math.abs(getSlideTargetLeft(track, slides[i]) - track.scrollLeft);
+    if (dist < bestDistance) {
+      bestDistance = dist;
+      nearestIdx = i;
+    }
   }
-
-  return {
-    title: space.name,
-    subtitle: `Local ${order} - Planta Baja`,
-    fullLabel: `${space.name} (Local ${order})`,
-    area: "70 m²",
-    description: space.description,
-  };
+  return nearestIdx;
 }
 
 export function PlazaInteractiveSection({
@@ -75,7 +91,9 @@ export function PlazaInteractiveSection({
   whatsapp: string;
 }) {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
-  const [preselectedUnit, setPreselectedUnit] = useState<string>("Próxima liberación o ampliación (70 m²)");
+  const [preselectedUnit, setPreselectedUnit] = useState<string>(
+    "Próxima liberación o nueva fase comercial (70 m²)"
+  );
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [sector, setSector] = useState(BUSINESS_SECTORS[0]);
@@ -84,7 +102,22 @@ export function PlazaInteractiveSection({
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [submittedUrl, setSubmittedUrl] = useState<string | null>(null);
 
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const [settledAnnouncement, setSettledAnnouncement] = useState("");
+  const [copiedState, setCopiedState] = useState<Record<string, "copied" | "failed" | undefined>>({});
+  const [copiedMessage, setCopiedMessage] = useState<Record<string, string | undefined>>({});
+  const [highlightedSpaceId, setHighlightedSpaceId] = useState<string | null>(null);
+
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const pendingTargetRef = useRef<{ index: number; left: number } | null>(null);
+  const lastSettledRef = useRef<number>(0);
+  const scrollRafRef = useRef<number | null>(null);
+  const copyTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const lastAnnouncedRef = useRef<string>("");
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const modalTitleId = useId();
   const nameInputId = useId();
   const phoneInputId = useId();
@@ -96,14 +129,320 @@ export function PlazaInteractiveSection({
 
   const targetPhone = cleanPhoneDigits(whatsapp);
 
-  const primarySpaces = spaces.slice(0, 2);
-  const totalOperating = primarySpaces.filter((s) => s.status === "occupied").length || 2;
-  const totalModules = primarySpaces.length || 2;
-  const statusSummaryText = `${totalOperating}/${totalModules} locales operando • Lista de espera activa`;
+  const primarySpaces = spaces;
+  const stats = computeCatalogStats(primarySpaces);
+  const freeCount = stats.openCount;
+  const totalOperating = stats.occupiedCount;
+  const totalModules = primarySpaces.length;
+  const totalSlides = primarySpaces.length + 1;
+  const hideDesktopControls = totalSlides <= 3 && !isOverflowing;
+  const statusSummaryText =
+    freeCount > 0
+      ? `${freeCount} ${freeCount === 1 ? "local disponible" : "locales disponibles"} • ${totalOperating}/${totalModules} operando`
+      : `${totalOperating}/${totalModules} locales operando • Lista de espera activa`;
 
   const heroWhatsappHref = `https://wa.me/${targetPhone}?text=${encodeURIComponent(
     "Hola, quiero información sobre la lista de espera en Plaza Aragón"
   )}`;
+
+  const scrollToSlide = useCallback((targetIdx: number, options?: { announce?: boolean }) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const slides = Array.from(track.children) as HTMLElement[];
+    if (slides.length === 0) return;
+
+    const clampedIdx = ((targetIdx % slides.length) + slides.length) % slides.length;
+    const targetSlide = slides[clampedIdx];
+    const targetLeft = getSlideTargetLeft(track, targetSlide);
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const behavior: ScrollBehavior = prefersReduced ? "auto" : "smooth";
+
+    setActiveSlide(clampedIdx);
+
+    if (Math.abs(track.scrollLeft - targetLeft) <= 2) {
+      pendingTargetRef.current = null;
+      if (options?.announce !== false && clampedIdx !== lastSettledRef.current) {
+        lastSettledRef.current = clampedIdx;
+        setSettledAnnouncement(`Módulo ${clampedIdx + 1} de ${slides.length}`);
+      }
+      return;
+    }
+
+    pendingTargetRef.current = { index: clampedIdx, left: targetLeft };
+    track.scrollTo({ left: targetLeft, behavior });
+
+    if (behavior === "auto") {
+      requestAnimationFrame(() => {
+        pendingTargetRef.current = null;
+        if (options?.announce !== false && clampedIdx !== lastSettledRef.current) {
+          lastSettledRef.current = clampedIdx;
+          setSettledAnnouncement(`Módulo ${clampedIdx + 1} de ${slides.length}`);
+        }
+      });
+    }
+  }, []);
+
+  function navigateBy(delta: -1 | 1) {
+    const track = trackRef.current;
+    if (!track) return;
+    const slides = Array.from(track.children) as HTMLElement[];
+    if (slides.length <= 1) return;
+
+    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+    if (maxScroll <= 2) return;
+
+    const pending = pendingTargetRef.current;
+    const currentIdx = pending !== null ? pending.index : getNearestSlideIndex(track);
+    const currentLeft = pending !== null ? pending.left : track.scrollLeft;
+
+    if (delta > 0) {
+      if (currentLeft >= maxScroll - 2) {
+        if (slides.length >= 3) {
+          scrollToSlide(0);
+        }
+        return;
+      }
+      let nextIdx = currentIdx + 1;
+      while (
+        nextIdx < slides.length &&
+        getSlideTargetLeft(track, slides[nextIdx]) <= currentLeft + 2
+      ) {
+        nextIdx += 1;
+      }
+      if (nextIdx >= slides.length) {
+        if (slides.length >= 3) {
+          scrollToSlide(0);
+        }
+        return;
+      }
+      scrollToSlide(nextIdx);
+      return;
+    }
+
+    if (currentLeft <= 2) {
+      if (slides.length >= 3) {
+        scrollToSlide(slides.length - 1);
+      }
+      return;
+    }
+    let prevIdx = currentIdx - 1;
+    while (
+      prevIdx >= 0 &&
+      getSlideTargetLeft(track, slides[prevIdx]) >= currentLeft - 2
+    ) {
+      prevIdx -= 1;
+    }
+    if (prevIdx < 0) {
+      if (slides.length >= 3) {
+        scrollToSlide(slides.length - 1);
+      }
+      return;
+    }
+    scrollToSlide(prevIdx);
+  }
+
+  useEffect(() => {
+    const timers = copyTimersRef.current;
+    return () => {
+      for (const key of Object.keys(timers)) {
+        clearTimeout(timers[key]);
+      }
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const updateOverflow = () => {
+      setIsOverflowing(track.scrollWidth - track.clientWidth > 8);
+    };
+
+    const rafId = requestAnimationFrame(updateOverflow);
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateOverflow);
+      return () => {
+        cancelAnimationFrame(rafId);
+        window.removeEventListener("resize", updateOverflow);
+      };
+    }
+
+    const observer = new ResizeObserver(updateOverflow);
+    observer.observe(track);
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
+  }, [totalSlides]);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const supportsScrollEnd = "onscrollend" in window;
+
+    const handleSettled = () => {
+      const pending = pendingTargetRef.current;
+      if (pending !== null) {
+        if (Math.abs(track.scrollLeft - pending.left) > 16) {
+          return;
+        }
+        const settledIndex = pending.index;
+        pendingTargetRef.current = null;
+        setActiveSlide(settledIndex);
+        if (settledIndex !== lastSettledRef.current) {
+          lastSettledRef.current = settledIndex;
+          setSettledAnnouncement(`Módulo ${settledIndex + 1} de ${totalSlides}`);
+        }
+        return;
+      }
+
+      const settledIndex = getNearestSlideIndex(track);
+      setActiveSlide(settledIndex);
+      if (settledIndex !== lastSettledRef.current) {
+        lastSettledRef.current = settledIndex;
+        setSettledAnnouncement(`Módulo ${settledIndex + 1} de ${totalSlides}`);
+      }
+    };
+
+    const handleUserInterrupt = () => {
+      pendingTargetRef.current = null;
+    };
+
+    const handleScroll = () => {
+      if (pendingTargetRef.current === null) {
+        if (scrollRafRef.current === null) {
+          scrollRafRef.current = requestAnimationFrame(() => {
+            scrollRafRef.current = null;
+            if (pendingTargetRef.current !== null) return;
+            const nearest = getNearestSlideIndex(track);
+            setActiveSlide((prev) => (prev === nearest ? prev : nearest));
+          });
+        }
+      }
+
+      if (!supportsScrollEnd) {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(handleSettled, 150);
+      }
+    };
+
+    track.addEventListener("scroll", handleScroll, { passive: true });
+    track.addEventListener("touchstart", handleUserInterrupt, { passive: true });
+    track.addEventListener("wheel", handleUserInterrupt, { passive: true });
+    if (supportsScrollEnd) {
+      track.addEventListener("scrollend", handleSettled);
+    }
+
+    return () => {
+      track.removeEventListener("scroll", handleScroll);
+      track.removeEventListener("touchstart", handleUserInterrupt);
+      track.removeEventListener("wheel", handleUserInterrupt);
+      if (supportsScrollEnd) {
+        track.removeEventListener("scrollend", handleSettled);
+      }
+      if (scrollRafRef.current !== null) {
+        cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, [totalSlides]);
+
+  useEffect(() => {
+    const syncFromHash = () => {
+      const hash = window.location.hash;
+      if (!hash.startsWith("#local-card-")) return;
+      const targetId = hash.slice("#local-card-".length);
+      const idx = primarySpaces.findIndex((s) => s.id === targetId);
+      if (idx === -1) return;
+      scrollToSlide(idx, { announce: false });
+      setHighlightedSpaceId(targetId);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedSpaceId(null);
+      }, 2600);
+    };
+
+    const rafId = requestAnimationFrame(syncFromHash);
+    window.addEventListener("hashchange", syncFromHash);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("hashchange", syncFromHash);
+    };
+  }, [primarySpaces, scrollToSlide]);
+
+  function reportCopyOutcome(spaceId: string, ok: boolean) {
+    if (copyTimersRef.current[spaceId]) {
+      clearTimeout(copyTimersRef.current[spaceId]);
+    }
+
+    let message = ok ? "¡Enlace copiado!" : "No se pudo copiar";
+    if (message === lastAnnouncedRef.current) {
+      message += "\u00A0";
+    }
+    lastAnnouncedRef.current = message;
+
+    setCopiedState((prev) => ({ ...prev, [spaceId]: ok ? "copied" : "failed" }));
+    setCopiedMessage((prev) => ({ ...prev, [spaceId]: "" }));
+
+    requestAnimationFrame(() => {
+      setCopiedMessage((prev) => ({ ...prev, [spaceId]: message }));
+    });
+
+    copyTimersRef.current[spaceId] = setTimeout(() => {
+      setCopiedState((prev) => ({ ...prev, [spaceId]: undefined }));
+      setCopiedMessage((prev) => ({ ...prev, [spaceId]: "" }));
+    }, 2200);
+  }
+
+  async function handleShareSpace(space: Space, index: number) {
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "https://plaza-aragon.com";
+    const shareData = buildSpaceShareData(space, index, origin);
+
+    if (
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      window.matchMedia?.("(pointer: coarse)").matches
+    ) {
+      try {
+        await navigator.share({
+          title: shareData.title,
+          text: shareData.text,
+          url: shareData.url,
+        });
+        return;
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareData.clipboardText);
+      } else if (!legacyCopy(shareData.clipboardText)) {
+        throw new Error("Copy failed");
+      }
+      reportCopyOutcome(space.id, true);
+    } catch {
+      if (legacyCopy(shareData.clipboardText)) {
+        reportCopyOutcome(space.id, true);
+      } else {
+        reportCopyOutcome(space.id, false);
+      }
+    }
+  }
 
   function openWaitlistModal(unitPreference: string) {
     setPreselectedUnit(unitPreference);
@@ -323,20 +662,34 @@ export function PlazaInteractiveSection({
           <div className="flex items-start gap-3 sm:items-center">
             <span className="mt-1 flex h-2.5 w-2.5 shrink-0 rounded-full bg-barro sm:mt-0" aria-hidden="true" />
             <p className="text-sm font-bold text-tinta sm:text-base">
-              <span className="text-[#943818]">Estado actual: 2/2 locales operando con éxito</span>{" "}
+              <span className="text-[#943818]">
+                {freeCount > 0
+                  ? stats.availableCount > 0
+                    ? `Estado actual: ${stats.availableCount} ${stats.availableCount === 1 ? "local disponible ahora" : "locales disponibles ahora"}`
+                    : `Estado actual: ${stats.constructionCount} ${stats.constructionCount === 1 ? "local en preventa" : "locales en preventa"}`
+                  : `Estado actual: ${totalOperating}/${totalModules} locales operando con éxito`}
+              </span>{" "}
               <span className="font-medium text-tinta/90">
-                • Lista de espera activa para próximas liberaciones o ampliaciones.
+                {freeCount > 0
+                  ? "• Agenda tu visita o comparte la disponibilidad del módulo."
+                  : "• Lista de espera activa para próximas liberaciones o ampliaciones."}
               </span>
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => openWaitlistModal("Próxima liberación o ampliación (70 m²)")}
+            onClick={() =>
+              openWaitlistModal(
+                freeCount > 0
+                  ? "Cualquier módulo en planta baja (70 m²)"
+                  : "Próxima liberación o nueva fase comercial (70 m²)"
+              )
+            }
             data-testid="waitlist-banner-trigger"
             className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-barro px-4 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-[#9e3d1c] active:scale-[0.98] cursor-pointer sm:text-sm"
           >
-            <span>Unirme a la lista de espera</span>
+            <span>{freeCount > 0 ? "Solicitar disponibilidad" : "Unirme a la lista de espera"}</span>
             <span aria-hidden="true">→</span>
           </button>
         </div>
@@ -359,155 +712,327 @@ export function PlazaInteractiveSection({
 
           <div className="inline-flex items-center gap-2 self-start rounded-2xl border border-selva/20 bg-selva-claro/60 px-4 py-2 text-xs font-bold text-selva">
             <span className="h-2 w-2 rounded-full bg-selva" aria-hidden="true" />
-            100% Ocupación Comercial • Caso de Éxito en Olanchito
+            {freeCount > 0
+              ? "Disponibilidad inmediata en Olanchito"
+              : "100% Ocupación Comercial • Caso de Éxito en Olanchito"}
           </div>
         </div>
 
         <div
-          id="catalog-grid"
-          data-testid="catalog-grid"
-          className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3"
+          role="region"
+          aria-roledescription="carrusel"
+          aria-label="Módulos comerciales en Plaza Aragón"
+          className="relative mt-8"
         >
-          {primarySpaces.map((space, idx) => {
-            const meta = getSpaceDisplayMeta(space, idx);
-            const tags = getSpaceCatalogTags(space, idx);
-
-            return (
-              <article
-                id={`local-card-${space.id}`}
-                data-testid={`space-card-${space.id}`}
-                key={space.id}
-                className="card flex flex-col justify-between transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <div>
-                  <SpaceGallery
-                    images={space.image_urls}
-                    name={meta.title}
-                    unitNumber={space.sort_order || idx + 1}
-                    status={space.status}
-                    priority={idx === 0}
-                  />
-
-                  <div className="mt-4 flex items-start justify-between gap-2">
-                    <div>
-                      <span className="block text-xs font-bold uppercase tracking-wider text-piedra">
-                        {meta.subtitle}
-                      </span>
-                      <h3 className="mt-0.5 font-display text-xl font-bold text-tinta">
-                        {meta.title}
-                      </h3>
-                    </div>
-                    <StatusBadge status={space.status} />
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap items-baseline gap-2">
-                    <p className="font-display text-2xl font-bold tabular-nums text-azul">
-                      {formatMoney(space.price)}{" "}
-                      <span className="font-sans text-xs font-medium text-piedra">/ mes</span>
-                    </p>
-                    <span className="text-xs font-bold text-piedra">•</span>
-                    <span className="rounded-lg bg-azul/10 px-2.5 py-0.5 text-xs font-bold text-azul">
-                      Área: {meta.area}
-                    </span>
-                  </div>
-
-                  <p className="mt-3 text-sm leading-relaxed text-piedra">
-                    {meta.description}
-                  </p>
-
-                  <ul className="mt-4 flex flex-wrap gap-1.5" aria-label={`Características de ${meta.title}`}>
-                    {tags.map((feat) => (
-                      <li
-                        key={feat}
-                        className="rounded-lg bg-arena px-2.5 py-1 text-xs font-semibold text-tinta ring-1 ring-crema/80"
-                      >
-                        {feat}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-6 border-t border-crema/70 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => openWaitlistModal(meta.fullLabel)}
-                    data-testid={`waitlist-card-cta-${idx + 1}`}
-                    className="btn-primary min-h-11 w-full text-sm"
-                  >
-                    <span>Quiero un espacio similar</span>
-                    <span aria-hidden="true">→</span>
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-
-          <article
-            data-testid="waitlist-opportunity-card"
-            className="border-2 border-dashed border-barro/40 bg-white/60 p-6 rounded-3xl flex flex-col justify-between transition duration-200 hover:border-barro/70 hover:bg-white/90 hover:shadow-md"
+          <div
+            className={`mb-4 flex items-center justify-between gap-3 ${
+              hideDesktopControls ? "lg:hidden" : ""
+            }`}
           >
-            <div>
-              <div className="flex items-center justify-between gap-3">
-                <div
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl bg-barro-claro text-barro ring-1 ring-barro/25"
-                  aria-hidden="true"
-                >
-                  <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                  </svg>
-                </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-barro-claro px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-barro ring-1 ring-barro/25">
-                  <span className="h-1.5 w-1.5 rounded-full bg-barro" aria-hidden="true" />
-                  Lista Prioritaria
-                </span>
-              </div>
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-piedra">
+              <span>Desliza para explorar los módulos</span>
+              <span aria-hidden="true">→</span>
+            </p>
 
-              <p className="mt-5 text-xs font-bold uppercase tracking-wider text-barro">
-                Tu próximo local aquí • Únete a la lista de espera
-              </p>
-
-              <h3 className="mt-1 font-display text-2xl font-bold text-tinta">
-                Tu próximo local aquí
-              </h3>
-
-              <p className="mt-2.5 text-sm leading-relaxed text-piedra">
-                Sé el primero en enterarte cuando un local se libere o cuando aperturemos la siguiente fase comercial.
-              </p>
-
-              <ul className="mt-5 space-y-2.5 border-t border-crema/80 pt-4 text-xs font-semibold text-tinta sm:text-sm">
-                <li className="flex items-start gap-2.5">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-whatsapp/15 ring-1 ring-whatsapp/35" aria-hidden="true">
-                    <WhatsAppGlyph variant="green" className="h-3.5 w-3.5" size={14} />
-                  </span>
-                  <span>Aviso directo por WhatsApp antes de publicar disponibilidad</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-selva-claro text-selva" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>Prioridad de reserva en módulos de 70 m² desde L. 8,000/mes</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-selva-claro text-selva" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>Opción de adecuar acabados en preventa de nueva fase</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="mt-6 pt-4">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => openWaitlistModal("Próxima liberación o nueva fase comercial (70 m²)")}
-                data-testid="waitlist-dashed-cta"
-                className="btn-accent min-h-12 w-full text-sm shadow-sm"
+                onClick={() => navigateBy(-1)}
+                disabled={totalSlides < 3 && activeSlide === 0}
+                aria-label="Módulo anterior"
+                data-testid="carousel-prev-btn"
+                className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-xl border border-crema bg-white px-3 text-sm font-bold text-tinta shadow-2xs transition hover:border-azul/35 hover:text-azul active:scale-95 disabled:cursor-not-allowed disabled:opacity-45 touch-manipulation"
               >
-                <span>Unirme a lista prioritaria</span>
+                <span aria-hidden="true">←</span>
+                <span className="hidden sm:inline sm:ml-1.5">Anterior</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigateBy(1)}
+                disabled={totalSlides < 3 && activeSlide >= totalSlides - 1}
+                aria-label="Siguiente módulo"
+                data-testid="carousel-next-btn"
+                className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-xl border border-crema bg-white px-3 text-sm font-bold text-tinta shadow-2xs transition hover:border-azul/35 hover:text-azul active:scale-95 disabled:cursor-not-allowed disabled:opacity-45 touch-manipulation"
+              >
+                <span className="hidden sm:inline sm:mr-1.5">Siguiente</span>
                 <span aria-hidden="true">→</span>
               </button>
             </div>
-          </article>
+          </div>
+
+          <div
+            ref={trackRef}
+            id="catalog-grid"
+            data-testid="catalog-grid"
+            tabIndex={0}
+            role="group"
+            aria-label="Lista de módulos comerciales"
+            className="no-scrollbar relative flex gap-5 overflow-x-auto scroll-smooth motion-reduce:scroll-auto snap-x snap-mandatory touch-manipulation py-2 -my-2"
+          >
+            {primarySpaces.map((space, idx) => {
+              const meta = getSpaceDisplayMeta(space, idx);
+              const tags = getSpaceCatalogTags(space, idx);
+              const isFree = space.status === "available" || space.status === "construction";
+              const isHighlighted = highlightedSpaceId === space.id;
+              const ctaLabel =
+                space.status === "available"
+                  ? "Solicitar este local"
+                  : space.status === "construction"
+                    ? "Reservar en preventa"
+                    : "Quiero un espacio similar";
+
+              return (
+                <article
+                  id={`local-card-${space.id}`}
+                  data-testid={`space-card-${space.id}`}
+                  key={space.id}
+                  role="group"
+                  aria-roledescription="diapositiva"
+                  aria-label={`${idx + 1} de ${totalSlides}`}
+                  className={`card scroll-mt-24 flex w-[86%] shrink-0 snap-center flex-col justify-between transition duration-200 hover:-translate-y-0.5 hover:shadow-md sm:w-[72%] md:w-[46%] lg:w-[calc((100%-2.5rem)/3)] lg:snap-start ${
+                    isHighlighted ? "ring-2 ring-turquesa shadow-lg" : ""
+                  }`}
+                >
+                  <div>
+                    <SpaceGallery
+                      images={space.image_urls}
+                      name={meta.title}
+                      unitNumber={space.sort_order || idx + 1}
+                      status={space.status}
+                      priority={idx === 0}
+                    />
+
+                    <div className="mt-4 flex items-start justify-between gap-2">
+                      <div>
+                        <span className="block text-xs font-bold uppercase tracking-wider text-piedra">
+                          {meta.subtitle}
+                        </span>
+                        <h3 className="mt-0.5 font-display text-xl font-bold text-tinta">
+                          {meta.title}
+                        </h3>
+                      </div>
+                      <StatusBadge status={space.status} />
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap items-baseline gap-2">
+                      <p className="font-display text-2xl font-bold tabular-nums text-azul">
+                        {formatMoney(space.price)}{" "}
+                        <span className="font-sans text-xs font-medium text-piedra">/ mes</span>
+                      </p>
+                      <span className="text-xs font-bold text-piedra">•</span>
+                      <span className="rounded-lg bg-azul/10 px-2.5 py-0.5 text-xs font-bold text-azul">
+                        Área: {meta.area}
+                      </span>
+                    </div>
+
+                    <p className="mt-3 text-sm leading-relaxed text-piedra">
+                      {meta.description}
+                    </p>
+
+                    <ul className="mt-4 flex flex-wrap gap-1.5" aria-label={`Características de ${meta.title}`}>
+                      {tags.map((feat) => (
+                        <li
+                          key={feat}
+                          className="rounded-lg bg-arena px-2.5 py-1 text-xs font-semibold text-tinta ring-1 ring-crema/80"
+                        >
+                          {feat}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div
+                    className={`mt-6 flex items-center gap-2 border-t border-crema/70 pt-4 ${
+                      isFree ? "flex-wrap" : ""
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => openWaitlistModal(meta.fullLabel)}
+                      data-testid={`waitlist-card-cta-${idx + 1}`}
+                      className={`btn-primary min-h-11 px-4 py-2.5 text-sm ${
+                        isFree ? "flex-1 basis-[10.5rem]" : "flex-1"
+                      }`}
+                    >
+                      <span>{ctaLabel}</span>
+                      <span aria-hidden="true">→</span>
+                    </button>
+
+                    <span
+                      className={`relative inline-flex ${
+                        isFree ? "flex-1 basis-[8.5rem] sm:flex-initial" : "shrink-0"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleShareSpace(space, idx)}
+                        data-testid={`share-space-btn-${idx + 1}`}
+                        data-copied={copiedState[space.id] === "copied" ? "" : undefined}
+                        data-failed={copiedState[space.id] === "failed" ? "" : undefined}
+                        aria-label={isFree ? undefined : `Compartir ${meta.title}`}
+                        title={`Compartir ${meta.title}`}
+                        className={
+                          isFree
+                            ? "inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-turquesa/35 bg-turquesa-claro/65 px-3.5 py-2 text-xs font-bold text-azul transition duration-150 hover:border-turquesa hover:bg-turquesa-claro active:scale-[0.97] touch-manipulation sm:text-sm"
+                            : "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-xl border border-crema bg-arena text-tinta transition duration-150 hover:border-azul/35 hover:bg-crema/60 hover:text-azul active:scale-[0.97] touch-manipulation"
+                        }
+                      >
+                        {copiedState[space.id] === "copied" ? (
+                          <svg
+                            className="h-4.5 w-4.5 shrink-0 text-selva"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="h-4.5 w-4.5 shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                            />
+                          </svg>
+                        )}
+                        {isFree && (
+                          <span>
+                            Compartir local<span className="sr-only"> {meta.title}</span>
+                          </span>
+                        )}
+                      </button>
+
+                      <span
+                        role="status"
+                        className={`pointer-events-none absolute -top-10 right-0 z-20 whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-bold text-white shadow-md transition-opacity duration-150 ${
+                          copiedState[space.id] === "failed" ? "bg-barro" : "bg-tinta"
+                        } ${copiedState[space.id] ? "opacity-100" : "opacity-0"}`}
+                      >
+                        {copiedMessage[space.id] ?? ""}
+                      </span>
+                    </span>
+                  </div>
+                </article>
+              );
+            })}
+
+            <article
+              data-testid="waitlist-opportunity-card"
+              role="group"
+              aria-roledescription="diapositiva"
+              aria-label={`${totalSlides} de ${totalSlides}`}
+              className="flex w-[86%] shrink-0 snap-center flex-col justify-between rounded-3xl border-2 border-dashed border-barro/40 bg-white/60 p-6 transition duration-200 hover:border-barro/70 hover:bg-white/90 hover:shadow-md sm:w-[72%] md:w-[46%] lg:w-[calc((100%-2.5rem)/3)] lg:snap-start"
+            >
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <div
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-barro-claro text-barro ring-1 ring-barro/25"
+                    aria-hidden="true"
+                  >
+                    <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-barro-claro px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-barro ring-1 ring-barro/25">
+                    <span className="h-1.5 w-1.5 rounded-full bg-barro" aria-hidden="true" />
+                    Lista Prioritaria
+                  </span>
+                </div>
+
+                <p className="mt-5 text-xs font-bold uppercase tracking-wider text-barro">
+                  Tu próximo local aquí • Únete a la lista de espera
+                </p>
+
+                <h3 className="mt-1 font-display text-2xl font-bold text-tinta">
+                  Tu próximo local aquí
+                </h3>
+
+                <p className="mt-2.5 text-sm leading-relaxed text-piedra">
+                  Sé el primero en enterarte cuando un local se libere o cuando aperturemos la siguiente fase comercial.
+                </p>
+
+                <ul className="mt-5 space-y-2.5 border-t border-crema/80 pt-4 text-xs font-semibold text-tinta sm:text-sm">
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-whatsapp/15 ring-1 ring-whatsapp/35" aria-hidden="true">
+                      <WhatsAppGlyph variant="green" className="h-3.5 w-3.5" size={14} />
+                    </span>
+                    <span>Aviso directo por WhatsApp antes de publicar disponibilidad</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-selva-claro text-selva" aria-hidden="true">
+                      ✓
+                    </span>
+                    <span>Prioridad de reserva en módulos de 70 m² desde L. 8,000/mes</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-selva-claro text-selva" aria-hidden="true">
+                      ✓
+                    </span>
+                    <span>Opción de adecuar acabados en preventa de nueva fase</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mt-6 pt-4">
+                <button
+                  type="button"
+                  onClick={() => openWaitlistModal("Próxima liberación o nueva fase comercial (70 m²)")}
+                  data-testid="waitlist-dashed-cta"
+                  className="btn-accent min-h-12 w-full text-sm shadow-sm"
+                >
+                  <span>Unirme a lista prioritaria</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            </article>
+          </div>
+
+          <p className="sr-only" role="status" aria-live="polite">
+            {settledAnnouncement}
+          </p>
+
+          <nav
+            aria-label="Seleccionar módulo comercial"
+            data-testid="carousel-markers"
+            className={`mt-4 flex flex-wrap items-center justify-center gap-1.5 ${
+              hideDesktopControls ? "lg:hidden" : ""
+            }`}
+          >
+            {Array.from({ length: totalSlides }).map((_, idx) => {
+              const isActive = activeSlide === idx;
+              const slideTitle =
+                idx < primarySpaces.length
+                  ? getSpaceDisplayMeta(primarySpaces[idx], idx).title
+                  : "Lista prioritaria";
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => scrollToSlide(idx)}
+                  aria-label={`Ir al módulo ${idx + 1}: ${slideTitle}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`flex min-h-11 min-w-7 cursor-pointer items-center justify-center px-1 touch-manipulation transition ${
+                    isActive ? "text-azul" : "text-crema hover:text-piedra"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`block h-2.5 rounded-full transition-all duration-200 ${
+                      isActive ? "w-7 bg-azul" : "w-2.5 bg-current"
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </nav>
         </div>
       </section>
 
@@ -586,12 +1111,20 @@ export function PlazaInteractiveSection({
                     onChange={(e) => setPreselectedUnit(e.target.value)}
                     className="field"
                   >
-                    <option value="Local Pacura (Local 1 - Esquinero)">
-                      Similar a Local Pacura (Local 1 - Esquinero • 70 m²)
-                    </option>
-                    <option value="Local Corozal (Local 2 - Central Frontal)">
-                      Similar a Local Corozal (Local 2 - Central Frontal • 70 m²)
-                    </option>
+                    {primarySpaces.map((space, idx) => {
+                      const meta = getSpaceDisplayMeta(space, idx);
+                      const optionLabel =
+                        space.status === "available"
+                          ? `${meta.fullLabel} • ${meta.area} (Disponible)`
+                          : space.status === "construction"
+                            ? `${meta.fullLabel} • ${meta.area} (Preventa)`
+                            : `Similar a ${meta.fullLabel} • ${meta.area}`;
+                      return (
+                        <option key={space.id} value={meta.fullLabel}>
+                          {optionLabel}
+                        </option>
+                      );
+                    })}
                     <option value="Próxima liberación o nueva fase comercial (70 m²)">
                       Próxima liberación o nueva fase comercial (70 m²)
                     </option>

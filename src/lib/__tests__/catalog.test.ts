@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  buildSpaceShareData,
   computeCatalogStats,
   COROZAL_TAGS,
   filterSpaces,
   getSpaceCatalogTags,
+  getSpaceDisplayMeta,
   getSpaceHighlights,
+  isSpaceFree,
   PACURA_TAGS,
 } from "../catalog.ts";
 import type { Space } from "../types.ts";
@@ -107,6 +110,106 @@ describe("catalog utilities", () => {
       const stats = computeCatalogStats(spaces);
       assert.equal(stats.minPrice, 8500);
       assert.equal(stats.maxPrice, 8500);
+    });
+  });
+
+  describe("Display metadata & module sharing", () => {
+    it("identifies free modules (available and construction) vs occupied modules", () => {
+      assert.equal(isSpaceFree(getMockSpace({ status: "available" })), true);
+      assert.equal(isSpaceFree(getMockSpace({ status: "construction" })), true);
+      assert.equal(isSpaceFree(getMockSpace({ status: "occupied" })), false);
+    });
+
+    it("resolves display metadata for Pacura, Corozal, and additional custom modules", () => {
+      const pacura = getSpaceDisplayMeta(
+        getMockSpace({ id: "1", name: "Local Pacura", sort_order: 1 }),
+        0
+      );
+      assert.equal(pacura.title, "Local Pacura");
+      assert.equal(pacura.subtitle, "Local 1 - Esquinero");
+
+      const corozal = getSpaceDisplayMeta(
+        getMockSpace({ id: "2", name: "Local Corozal", sort_order: 2 }),
+        1
+      );
+      assert.equal(corozal.title, "Local Corozal");
+      assert.equal(corozal.subtitle, "Local 2 - Central Frontal");
+
+      const third = getSpaceDisplayMeta(
+        getMockSpace({
+          id: "3",
+          name: "Local Aguán",
+          description: "",
+          sort_order: 3,
+        }),
+        2
+      );
+      assert.equal(third.title, "Local Aguán");
+      assert.equal(third.subtitle, "Local 3 - Planta Baja");
+      assert.equal(third.fullLabel, "Local Aguán (Local 3)");
+      assert.equal(third.area, "70 m²");
+      assert.ok(third.description.includes("70 m²"));
+    });
+
+    it("builds Spanish share payload with HNL rent, deep-link URL, and WhatsApp share URL", () => {
+      const space = getMockSpace({
+        id: "mod-3",
+        name: "Local Aguán",
+        price: 9200,
+        status: "available",
+        sort_order: 3,
+      });
+
+      const share = buildSpaceShareData(space, 2, "https://plaza-aragon.com///");
+
+      assert.equal(share.isFree, true);
+      assert.equal(share.url, "https://plaza-aragon.com/#local-card-mod-3");
+      assert.equal(share.title, "Local Aguán disponible en Plaza Aragón • Olanchito");
+      assert.match(share.text, /Cuota mensual/i);
+      assert.match(share.text, /9[.,]200\/mes/);
+      assert.ok(!share.text.toLowerCase().includes("canon"));
+      assert.equal(share.clipboardText, `${share.text}\n${share.url}`);
+      assert.ok(share.whatsappShareUrl.startsWith("https://api.whatsapp.com/send?text="));
+      assert.ok(
+        decodeURIComponent(share.whatsappShareUrl).includes(
+          "https://plaza-aragon.com/#local-card-mod-3"
+        )
+      );
+    });
+
+    it("handles construction and occupied share copy with invalid price fallback", () => {
+      const preSale = getSpaceDisplayMeta(
+        getMockSpace({ id: "4", name: "Local Yoro", sort_order: 4 }),
+        3
+      );
+      assert.equal(preSale.title, "Local Yoro");
+
+      const constructionShare = buildSpaceShareData(
+        getMockSpace({
+          id: "4",
+          name: "Local Yoro",
+          price: Number.NaN,
+          status: "construction",
+          sort_order: 4,
+        }),
+        3
+      );
+      assert.equal(constructionShare.isFree, true);
+      assert.match(constructionShare.title, /en preventa/);
+      assert.match(constructionShare.text, /L 8,000\/mes/);
+
+      const occupiedShare = buildSpaceShareData(
+        getMockSpace({
+          id: "1",
+          name: "Local Pacura",
+          price: 8000,
+          status: "occupied",
+          sort_order: 1,
+        }),
+        0
+      );
+      assert.equal(occupiedShare.isFree, false);
+      assert.match(occupiedShare.title, /^Local Pacura/);
     });
   });
 });
