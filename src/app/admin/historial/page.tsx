@@ -2,14 +2,187 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { getAdminPayments } from "@/lib/data";
-import { currentPeriod, formatDate, formatMoney, formatPeriod, MONTHS } from "@/lib/format";
-import { StatusBadge } from "@/components/status-badge";
+import { getAdminPayments, type AdminPayment } from "@/lib/data";
+import { currentPeriod, formatMoney, MONTHS } from "@/lib/format";
+import {
+  SpacePaymentsAccordion,
+  type SpaceColorConfig,
+  type SpacePaymentGroup,
+} from "./space-payments-accordion";
 
 export const metadata: Metadata = {
   title: "Historial Contable",
   description: "Libro histórico de pagos y transferencias en Plaza Aragón.",
 };
+
+const SPACE_PALETTE: Record<string, SpaceColorConfig> = {
+  azul: {
+    key: "azul",
+    barClass: "bg-azul",
+    dotClass: "bg-azul",
+    borderClass: "border-azul/25",
+    badgeBgClass: "bg-turquesa-claro/40",
+    badgeTextClass: "text-azul",
+  },
+  selva: {
+    key: "selva",
+    barClass: "bg-selva",
+    dotClass: "bg-selva",
+    borderClass: "border-selva/25",
+    badgeBgClass: "bg-selva-claro/60",
+    badgeTextClass: "text-selva",
+  },
+  turquesa: {
+    key: "turquesa",
+    barClass: "bg-turquesa",
+    dotClass: "bg-turquesa",
+    borderClass: "border-turquesa/25",
+    badgeBgClass: "bg-turquesa-claro/50",
+    badgeTextClass: "text-azul",
+  },
+  maiz: {
+    key: "maiz",
+    barClass: "bg-maiz",
+    dotClass: "bg-maiz",
+    borderClass: "border-maiz/35",
+    badgeBgClass: "bg-maiz-claro/70",
+    badgeTextClass: "text-[#734d08]",
+  },
+  barro: {
+    key: "barro",
+    barClass: "bg-barro",
+    dotClass: "bg-barro",
+    borderClass: "border-barro/25",
+    badgeBgClass: "bg-barro-claro/60",
+    badgeTextClass: "text-barro",
+  },
+};
+
+const PALETTE_ORDER: SpaceColorConfig[] = [
+  SPACE_PALETTE.azul,
+  SPACE_PALETTE.selva,
+  SPACE_PALETTE.turquesa,
+  SPACE_PALETTE.maiz,
+  SPACE_PALETTE.barro,
+];
+
+function normalizeSpaceName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getNamedSpaceColor(spaceName: string): SpaceColorConfig | null {
+  const normalized = normalizeSpaceName(spaceName);
+  if (normalized.includes("pacura") || normalized.includes("pacora")) {
+    return SPACE_PALETTE.azul;
+  }
+  if (normalized.includes("corozal")) {
+    return SPACE_PALETTE.selva;
+  }
+  return null;
+}
+
+function buildSpaceGroups(payments: AdminPayment[]): SpacePaymentGroup[] {
+  const map = new Map<
+    string,
+    {
+      spaceId: string;
+      spaceName: string;
+      sortOrder: number;
+      tenantNames: string[];
+      verifiedTotal: number;
+      verifiedCount: number;
+      pendingCount: number;
+      rejectedCount: number;
+      payments: AdminPayment[];
+    }
+  >();
+
+  for (const p of payments) {
+    const spaceId = p.lease?.space?.id ?? p.lease?.space?.name ?? "unknown";
+    const spaceName = p.lease?.space?.name || "Local";
+    const sortOrder = p.lease?.space?.sort_order ?? Number.MAX_SAFE_INTEGER;
+    const tenantName = p.lease?.tenant?.name?.trim();
+
+    let entry = map.get(spaceId);
+    if (!entry) {
+      entry = {
+        spaceId,
+        spaceName,
+        sortOrder,
+        tenantNames: [],
+        verifiedTotal: 0,
+        verifiedCount: 0,
+        pendingCount: 0,
+        rejectedCount: 0,
+        payments: [],
+      };
+      map.set(spaceId, entry);
+    }
+
+    if (tenantName && !entry.tenantNames.includes(tenantName)) {
+      entry.tenantNames.push(tenantName);
+    }
+
+    if (p.status === "verified") {
+      entry.verifiedCount += 1;
+      entry.verifiedTotal += Number(p.amount);
+    } else if (p.status === "pending") {
+      entry.pendingCount += 1;
+    } else if (p.status === "rejected") {
+      entry.rejectedCount += 1;
+    }
+
+    entry.payments.push(p);
+  }
+
+  const sorted = Array.from(map.values()).sort((a, b) => {
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    return a.spaceName.localeCompare(b.spaceName, "es");
+  });
+
+  // First pass: assign fixed brand colors to named spaces (Pacura/Pacora -> blue, Corozal -> green).
+  const assignedColors = new Map<string, SpaceColorConfig>();
+  const usedKeys = new Set<string>();
+
+  for (const group of sorted) {
+    const namedColor = getNamedSpaceColor(group.spaceName);
+    if (namedColor) {
+      assignedColors.set(group.spaceId, namedColor);
+      usedKeys.add(namedColor.key);
+    }
+  }
+
+  // Second pass: assign remaining spaces the next unused palette color.
+  let fallbackIndex = 0;
+  return sorted.map((group) => {
+    let color = assignedColors.get(group.spaceId);
+    if (!color) {
+      const unused = PALETTE_ORDER.find((c) => !usedKeys.has(c.key));
+      if (unused) {
+        color = unused;
+        usedKeys.add(unused.key);
+      } else {
+        color = PALETTE_ORDER[fallbackIndex % PALETTE_ORDER.length];
+        fallbackIndex += 1;
+      }
+    }
+
+    return {
+      spaceId: group.spaceId,
+      spaceName: group.spaceName,
+      tenantNames: group.tenantNames,
+      color,
+      verifiedTotal: group.verifiedTotal,
+      verifiedCount: group.verifiedCount,
+      pendingCount: group.pendingCount,
+      rejectedCount: group.rejectedCount,
+      payments: group.payments,
+    };
+  });
+}
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
@@ -22,6 +195,7 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
   const selectedYear = searchParams.ano ? Number(searchParams.ano) : cur.year;
 
   const payments = await getAdminPayments(selectedYear);
+  const spaceGroups = buildSpaceGroups(payments);
 
   const totalVerified = payments
     .filter((p) => p.status === "verified")
@@ -33,10 +207,29 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
 
   const monthlyTotals = MONTHS.map((name, idx) => {
     const monthNumber = idx + 1;
-    const verifiedSum = payments
-      .filter((p) => p.period_month === monthNumber && p.status === "verified")
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-    return { monthNumber, shortName: name.slice(0, 3), name, verifiedSum };
+    const segments = spaceGroups
+      .map((group) => {
+        const amount = group.payments
+          .filter((p) => p.period_month === monthNumber && p.status === "verified")
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+        return {
+          spaceId: group.spaceId,
+          spaceName: group.spaceName,
+          color: group.color,
+          amount,
+        };
+      })
+      .filter((seg) => seg.amount > 0);
+
+    const verifiedSum = segments.reduce((sum, seg) => sum + seg.amount, 0);
+
+    return {
+      monthNumber,
+      shortName: name.slice(0, 3),
+      name,
+      verifiedSum,
+      segments,
+    };
   });
 
   const maxMonthTotal = Math.max(...monthlyTotals.map((m) => m.verifiedSum), 1);
@@ -107,7 +300,7 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
 
       {/* ───────────── 12-MONTH REVENUE CHART ───────────── */}
       <section className="card">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="font-display text-lg font-bold text-azul">
               Recaudación Mensual Verificada · {selectedYear}
@@ -116,27 +309,73 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
               Toque cualquier mes para revisar sus comprobantes en el módulo de verificación.
             </p>
           </div>
+
+          {spaceGroups.length > 0 && (
+            <div
+              aria-label="Leyenda por local"
+              className="flex flex-wrap items-center gap-2"
+            >
+              {spaceGroups.map((group) => (
+                <span
+                  key={group.spaceId}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs ${group.color.badgeBgClass} ${group.color.borderClass}`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${group.color.dotClass}`}
+                  />
+                  <span className={`font-bold ${group.color.badgeTextClass}`}>
+                    {group.spaceName}
+                  </span>
+                  <span className="font-semibold tabular-nums text-piedra">
+                    {formatMoney(group.verifiedTotal)}
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-5 grid grid-cols-6 gap-2 sm:grid-cols-12">
           {monthlyTotals.map((m) => {
-            const pct = m.verifiedSum > 0 ? Math.max(14, Math.round((m.verifiedSum / maxMonthTotal) * 100)) : 4;
+            const pct =
+              m.verifiedSum > 0
+                ? Math.max(14, Math.round((m.verifiedSum / maxMonthTotal) * 100))
+                : 4;
+            const breakdown =
+              m.segments.length > 0
+                ? ` — ${m.segments.map((s) => `${s.spaceName}: ${formatMoney(s.amount)}`).join(" · ")}`
+                : "";
+            const monthTitle = `${m.name} ${selectedYear}: ${formatMoney(m.verifiedSum)}${breakdown}`;
+
             return (
               <Link
                 key={m.monthNumber}
                 href={`/admin/pagos?mes=${m.monthNumber}&ano=${selectedYear}`}
-                title={`${m.name} ${selectedYear}: ${formatMoney(m.verifiedSum)}`}
+                title={monthTitle}
+                aria-label={monthTitle}
                 className="group flex flex-col items-center rounded-xl border border-crema/70 bg-arena/40 p-2 transition hover:border-azul/30 hover:bg-white"
               >
                 <div className="flex h-20 w-full items-end justify-center rounded-lg bg-arena p-1">
-                  <div
-                    className={`w-full rounded-md transition-all ${
-                      m.verifiedSum > 0
-                        ? "bg-azul group-hover:bg-selva"
-                        : "bg-crema"
-                    }`}
-                    style={{ height: `${pct}%` }}
-                  />
+                  {m.verifiedSum > 0 ? (
+                    <div
+                      className="flex w-full flex-col-reverse overflow-hidden rounded-md divide-y divide-y-reverse divide-white/25 transition-all group-hover:brightness-110"
+                      style={{ height: `${pct}%` }}
+                    >
+                      {m.segments.map((seg) => (
+                        <div
+                          key={seg.spaceId}
+                          className={`w-full ${seg.color.barClass}`}
+                          style={{ flex: `${seg.amount} 1 0%` }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className="w-full rounded-md bg-crema"
+                      style={{ height: `${pct}%` }}
+                    />
+                  )}
                 </div>
                 <span className="mt-1.5 font-mono text-[10px] font-bold uppercase text-tinta">
                   {m.shortName}
@@ -150,67 +389,12 @@ export default async function AdminHistorialPage(props: { searchParams: SearchPa
         </div>
       </section>
 
-      <section className="defer-section card p-0 overflow-hidden">
-        <div className="p-5 border-b border-crema bg-white">
-          <h2 className="font-display text-lg font-bold text-azul">Libro de Entradas</h2>
-          <p className="text-xs text-piedra">Listado detallado de todas las transferencias registradas.</p>
-        </div>
-
-        {payments.length === 0 ? (
-          <div className="p-12 text-center text-sm text-piedra">
-            No hay registros de transferencias para el año {selectedYear}.
-          </div>
-        ) : (
-          <div className="divide-y divide-crema">
-            {payments.map((p) => (
-              <div
-                key={p.id}
-                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-arena/30 transition"
-              >
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-display text-base font-bold text-tinta">
-                      {p.lease?.space?.name || "Local"}
-                    </span>
-                    <span className="text-xs text-piedra">·</span>
-                    <span className="text-xs font-semibold text-azul">
-                      {formatPeriod({ month: p.period_month, year: p.period_year })}
-                    </span>
-                    <StatusBadge status={p.status} />
-                  </div>
-                  <p className="text-xs text-tinta">
-                    Inquilino: <span className="font-semibold">{p.lease?.tenant?.name || "Sin nombre"}</span>
-                  </p>
-                  <p className="text-[11px] text-piedra">
-                    Fecha de pago: {formatDate(p.payment_date)}
-                    {p.reviewed_at && ` · Verificado el ${formatDate(p.reviewed_at)}`}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0 border-t border-crema/40 sm:border-0">
-                  <div className="text-left sm:text-right">
-                    <p className="font-display text-lg font-bold tabular-nums text-tinta">
-                      {formatMoney(p.amount)}
-                    </p>
-                  </div>
-
-                  {p.signed_receipt_url && (
-                    <a
-                      href={p.signed_receipt_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex min-h-9 items-center justify-center rounded-xl border border-crema bg-white px-3.5 py-1.5 text-xs font-semibold text-azul shadow-2xs transition hover:border-turquesa hover:bg-turquesa-claro/40"
-                    >
-                      Comprobante ↗
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      <SpacePaymentsAccordion
+        key={selectedYear}
+        groups={spaceGroups}
+        selectedYear={selectedYear}
+        totalPaymentsCount={payments.length}
+      />
     </div>
   );
 }
-

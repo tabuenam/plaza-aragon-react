@@ -76,7 +76,7 @@ export async function getTenantPayments(leaseId: string): Promise<Payment[]> {
 export type AdminPayment = Payment & {
   lease: {
     id: string;
-    space: Pick<Space, "id" | "name">;
+    space: Pick<Space, "id" | "name"> & { sort_order?: number };
     tenant: Pick<Tenant, "id" | "name" | "contact_info">;
   };
   signed_receipt_url?: string;
@@ -113,7 +113,7 @@ export async function getAdminPayments(year?: number, month?: number): Promise<A
   const supabase = await createSupabaseServerClient();
   let query = supabase
     .from("payments")
-    .select("*, lease:leases(id, space:spaces(id, name), tenant:tenants(id, name, contact_info))")
+    .select("*, lease:leases(id, space:spaces(id, name, sort_order), tenant:tenants(id, name, contact_info))")
     .order("period_year", { ascending: false })
     .order("period_month", { ascending: false })
     .order("created_at", { ascending: false });

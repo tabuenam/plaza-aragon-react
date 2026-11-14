@@ -67,7 +67,7 @@ Abra [http://localhost:3000](http://localhost:3000) en su navegador.
 - **Explorador Interactivo de Locales (`CatalogExplorer`):** Filtros dinámicos (*Todos*, *Disponibles*, *En construcción*, *Ocupados*), contador en vivo y cálculo automático del rango de precios en Lempiras (HNL).
 - **Galería Arquitectónica (`SpaceGallery`):** Visualizador fotográfico touch-friendly con soporte para navegación táctil, teclado y previsualización ampliada.
 - **Detalle y Atributos de Locales:** Insignias de características (vitrina panorámica, porcelanato, medidor eléctrico independiente, baño privado, aire acondicionado).
-- **Sección de Preguntas Frecuentes:** Condiciones de contrato (6 a 12+ meses renovables), cuotas mensuales y política de depósito en garantía (1 mes de cuota).
+- **Sección de Preguntas Frecuentes:** Condiciones de contrato (desde 6 meses), cuotas mensuales y política de depósito en garantía (1 mes de cuota).
 - **Contacto Directo:** Enlace directo de reserva y consultas por WhatsApp hacia el propietario.
 - **Identidad Cultural Olanchiteña:** Paleta identitaria cálida (Azul Olanchito, Turquesa, Maíz, Selva, Barro y Arena) con créditos a Technetica.
 

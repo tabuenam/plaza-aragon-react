@@ -182,7 +182,7 @@ export default function OpenGraphImage() {
               CONTRATOS
             </span>
             <span style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", marginTop: "4px" }}>
-              6 a 12+ meses
+              Desde 6 meses
             </span>
           </div>
 

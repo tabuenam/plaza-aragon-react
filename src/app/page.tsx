@@ -74,7 +74,7 @@ const LEASE_STEPS = [
   {
     step: "Paso 03",
     title: "Firma de Contrato",
-    description: "Formalización del contrato de arrendamiento (6 a 12+ meses).",
+    description: "Formalización del contrato de arrendamiento (desde 6 meses).",
   },
   {
     step: "Paso 04",
@@ -288,7 +288,7 @@ export default async function HomePage() {
                   Arrendamiento Flexible
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-piedra">
-                  Contratos claros de 6 a 12+ meses renovables con condiciones transparentes.
+                  Contratos claros desde 6 meses con condiciones transparentes.
                 </p>
               </div>
 
@@ -676,7 +676,7 @@ export default async function HomePage() {
                     Términos de arrendamiento
                   </summary>
                   <p className="mt-1 rounded-xl bg-arena p-2.5 text-[11px] leading-relaxed text-tinta">
-                    Contratos comerciales de 6 a 12+ meses renovables, canon en Lempiras (HNL), depósito de garantía de 1 mes y servicios eléctricos independientes por medidor.
+                    Contratos comerciales desde 6 meses renovables, canon en Lempiras (HNL), depósito de garantía de 1 mes y servicios eléctricos independientes por medidor.
                   </p>
                 </details>
 

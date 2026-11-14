@@ -1,4 +1,3 @@
-import type { Space } from "./types.ts";
 import {
   DEFAULT_PHONE_DIGITS,
   DEFAULT_PHONE_DISPLAY,
@@ -10,6 +9,7 @@ import {
   getAppPhoneNumber,
   getWhatsAppLink,
 } from "./phone.ts";
+import type { Space } from "./types.ts";
 
 export type FilterOption = "all" | "open" | "occupied";
 
@@ -22,7 +22,7 @@ export {
   getAppPhoneDigits,
   getAppPhoneDisplay,
   getAppPhoneNumber,
-  getWhatsAppLink,
+  getWhatsAppLink
 };
 
 export const OFFICIAL_WHATSAPP_DIGITS = getAppPhoneDigits();
@@ -62,7 +62,7 @@ export const COROZAL_TAGS = [
 export const FAQS = [
   {
     q: "¿Cuál es la duración mínima y máxima de los contratos de arrendamiento?",
-    a: "Ofrecemos contratos flexibles de 6 a 12+ meses renovables, adaptados tanto a negocios consolidados en Olanchito como a nuevos proyectos comerciales, clínicas o sucursales.",
+    a: "Ofrecemos contratos flexibles desde 6 meses renovables, adaptados tanto a negocios consolidados en Olanchito como a nuevos proyectos comerciales, clínicas o sucursales.",
   },
   {
     q: "¿Qué servicios incluye cada local comercial?",
