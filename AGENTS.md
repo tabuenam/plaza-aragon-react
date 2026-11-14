@@ -19,7 +19,7 @@ Next.js 16 (App Router, Cache Components) · React 19 · TypeScript · Tailwind 
 `npm run dev` · `npm run build` · `npm run lint` · `npm run seed` (test users/data via `scripts/seed.mjs`, needs `.env.local`).
 
 ## Env (`.env.local`)
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (service role, server-only, never expose), `NEXT_PUBLIC_WHATSAPP_NUMBER`.
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (service role, server-only, never expose), `NEXT_PUBLIC_WHATSAPP_NUMBER` (configurable contact phone, default: `+4915175088921`).
 
 ## Layout
 - `src/app/` — `/` public catalog · `/ingresar` login · `/portal` tenant (payments, receipt upload) · `/admin` owner (`pagos`, `contratos`, `historial`). Each area colocates its feature-specific components, modals, and `actions.ts` (server actions).

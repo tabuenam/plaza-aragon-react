@@ -87,3 +87,36 @@ export function daysUntil(isoDate: string) {
   const target = new Date(`${isoDate.slice(0, 10)}T00:00:00Z`).getTime();
   return Math.round((target - today) / 86_400_000);
 }
+
+export type YearPaymentGroup<T> = {
+  year: number;
+  payments: T[];
+  verifiedCount: number;
+  pendingCount: number;
+  rejectedCount: number;
+};
+
+/** Groups payments by period_year (newest year first, newest month first within each year). */
+export function groupPaymentsByYear<
+  T extends { period_year: number; period_month: number; status: string },
+>(payments: T[]): YearPaymentGroup<T>[] {
+  const map = new Map<number, T[]>();
+  for (const payment of payments) {
+    const list = map.get(payment.period_year) ?? [];
+    list.push(payment);
+    map.set(payment.period_year, list);
+  }
+
+  return Array.from(map.entries())
+    .sort(([yearA], [yearB]) => yearB - yearA)
+    .map(([year, list]) => {
+      const sorted = [...list].sort((a, b) => b.period_month - a.period_month);
+      return {
+        year,
+        payments: sorted,
+        verifiedCount: sorted.filter((p) => p.status === "verified").length,
+        pendingCount: sorted.filter((p) => p.status === "pending").length,
+        rejectedCount: sorted.filter((p) => p.status === "rejected").length,
+      };
+    });
+}

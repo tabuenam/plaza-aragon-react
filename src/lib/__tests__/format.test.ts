@@ -7,6 +7,7 @@ import {
   formatDate,
   formatMoney,
   formatPeriod,
+  groupPaymentsByYear,
   MONTHS,
   parsePeriodKey,
   periodKey,
@@ -59,9 +60,42 @@ describe("format utilities", () => {
     it("extracts period from ISO date string", () => {
       assert.deepEqual(periodOfDate("2026-09-25"), { month: 9, year: 2026 });
     });
+
+    it("groups payments by year descending and month descending with status counts", () => {
+      const sample = [
+        { id: "1", period_year: 2025, period_month: 5, status: "verified" },
+        { id: "2", period_year: 2026, period_month: 1, status: "pending" },
+        { id: "3", period_year: 2025, period_month: 12, status: "verified" },
+        { id: "4", period_year: 2026, period_month: 11, status: "verified" },
+        { id: "5", period_year: 2026, period_month: 6, status: "rejected" },
+      ];
+
+      const groups = groupPaymentsByYear(sample);
+      assert.equal(groups.length, 2);
+      assert.equal(groups[0].year, 2026);
+      assert.deepEqual(
+        groups[0].payments.map((p) => p.period_month),
+        [11, 6, 1]
+      );
+      assert.equal(groups[0].verifiedCount, 1);
+      assert.equal(groups[0].pendingCount, 1);
+      assert.equal(groups[0].rejectedCount, 1);
+
+      assert.equal(groups[1].year, 2025);
+      assert.deepEqual(
+        groups[1].payments.map((p) => p.period_month),
+        [12, 5]
+      );
+      assert.equal(groups[1].verifiedCount, 2);
+      assert.equal(groups[1].pendingCount, 0);
+      assert.equal(groups[1].rejectedCount, 0);
+    });
   });
 
   describe("Edge Cases", () => {
+    it("returns an empty array when grouping empty payments", () => {
+      assert.deepEqual(groupPaymentsByYear([]), []);
+    });
     it("handles zero and decimal amounts in formatMoney", () => {
       assert.match(formatMoney(0), /0/);
       assert.match(formatMoney(8500.75), /75/);

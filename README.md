@@ -30,7 +30,7 @@ Complete las credenciales de su proyecto Supabase y el número de atención come
 NEXT_PUBLIC_SUPABASE_URL=https://<tu-proyecto>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<tu-clave-anon-o-publishable>
 SUPABASE_SECRET_KEY=<tu-clave-service-role>
-NEXT_PUBLIC_WHATSAPP_NUMBER=504XXXXXXXX
+NEXT_PUBLIC_WHATSAPP_NUMBER=+4915175088921
 NEXT_PUBLIC_SITE_URL=https://plaza-aragon.com
 ```
 
@@ -101,7 +101,7 @@ Abra [http://localhost:3000](http://localhost:3000) en su navegador.
 | `NEXT_PUBLIC_SUPABASE_URL` | **Sí** | URL del proyecto Supabase | `https://xxxx.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | **Sí** | Llave pública / anónima para SSR y cliente | `eyJhbGciOi...` |
 | `SUPABASE_SECRET_KEY` | **Sí** | Llave de rol de servicio (solo servidor) para tareas de seed y consultas administrativas de auth | `eyJhbGciOi...` |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | **Sí** | Número de teléfono internacional para contacto directo | `50499999999` |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | No | Número de teléfono internacional para contacto directo por WhatsApp y llamadas (por defecto `+4915175088921`) | `+4915175088921` |
 | `NEXT_PUBLIC_SITE_URL` | No | URL canónica para generación de sitemap y robots | `https://plaza-aragon.com` |
 
 ---

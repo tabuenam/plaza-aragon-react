@@ -5,6 +5,8 @@ import { describe, it } from "node:test";
 import manifest from "../../app/manifest.ts";
 import robots from "../../app/robots.ts";
 import sitemap from "../../app/sitemap.ts";
+import { buildStructuredData, computeCatalogStats, FAQS } from "../catalog.ts";
+import type { Space } from "../types.ts";
 
 describe("SEO and Generative Search Engine Configuration", () => {
   describe("Robots configuration", () => {
@@ -125,20 +127,63 @@ describe("SEO and Generative Search Engine Configuration", () => {
     });
   });
 
+  describe("JSON-LD Structured Data (buildStructuredData)", () => {
+    it("includes 9 FAQ questions, telephone (+49 151 75088921 default), and PreOrder waitlist availability", () => {
+      const mockSpaces: Space[] = [
+        {
+          id: "1",
+          name: "Pacura",
+          description: "Local Pacura 70 m²",
+          price: 8000,
+          status: "occupied",
+          image_urls: [],
+          sort_order: 1,
+        },
+        {
+          id: "2",
+          name: "Corozal",
+          description: "Local Corozal 70 m²",
+          price: 8000,
+          status: "occupied",
+          image_urls: [],
+          sort_order: 2,
+        },
+      ];
+      const stats = computeCatalogStats(mockSpaces);
+      const data = buildStructuredData(mockSpaces, stats, "https://plaza-aragon.com");
+
+      assert.equal(FAQS.length, 9);
+
+      const graph = data["@graph"];
+      const place = graph.find((node) => node["@type"] === "ShoppingCenter");
+      assert.ok(place && "telephone" in place && place.hasOfferCatalog);
+      assert.equal(place.telephone, "+49 151 75088921");
+      assert.equal(place.geo.latitude, 15.4845687);
+      assert.equal(place.geo.longitude, -86.5675536);
+      assert.ok(place.hasMap.includes("ChIJISm-U0NtaY8R5woW03JAg5s"));
+
+
+      const offers = place.hasOfferCatalog.itemListElement;
+      assert.ok(offers.length >= 3);
+      assert.ok(offers.every((offer) => offer.availability === "https://schema.org/PreOrder"));
+
+      const faqNode = graph.find((node) => node["@type"] === "FAQPage");
+      assert.ok(faqNode && "mainEntity" in faqNode && faqNode.mainEntity);
+      assert.equal(faqNode.mainEntity.length, 9);
+    });
+  });
+
   describe("Website Logo, Favicon & Web Manifest Assets", () => {
     it("provides a custom multi-resolution favicon.ico starting with 48x48 for Google Search", () => {
       const faviconPath = path.resolve(process.cwd(), "src/app/favicon.ico");
       assert.ok(fs.existsSync(faviconPath), "src/app/favicon.ico must exist");
 
       const buf = fs.readFileSync(faviconPath);
-      // Ensure it is not the default 15086-byte Next.js starter favicon
       assert.notEqual(buf.length, 15086, "favicon.ico must not be the default Next.js starter icon");
-      // ICO header: reserved = 0, type = 1 (ICO), count = 3
       assert.equal(buf.readUInt16LE(0), 0);
       assert.equal(buf.readUInt16LE(2), 1);
       assert.equal(buf.readUInt16LE(4), 3);
 
-      // First directory entry must be 48x48 (Google Search multiple of 48px requirement)
       assert.equal(buf.readUInt8(6), 48);
       assert.equal(buf.readUInt8(7), 48);
     });
@@ -154,7 +199,6 @@ describe("SEO and Generative Search Engine Configuration", () => {
         const full = path.resolve(process.cwd(), relPath);
         assert.ok(fs.existsSync(full), `${relPath} must exist`);
         const png = fs.readFileSync(full);
-        // PNG magic header + IHDR width/height at bytes 16..23
         assert.equal(png.readUInt32BE(0), 0x89504e47);
         assert.equal(png.readUInt32BE(16), expectedSize);
         assert.equal(png.readUInt32BE(20), expectedSize);
@@ -175,6 +219,74 @@ describe("SEO and Generative Search Engine Configuration", () => {
       assert.ok(srcs.includes("/icon.svg"));
       assert.ok(srcs.includes("/icon-192.png"));
       assert.ok(srcs.includes("/logo.png"));
+    });
+
+    it("uses official WhatsApp Brand Resource Center SVG assets and removes custom WhatsApp SVGs", () => {
+      const baseDir = "public/whatsapp/Brand Resource Center Page Downloads";
+      const expectedSvgs = [
+        `${baseDir}/01_Glyph/01_Digital RGB/03_SVG/Digital_Glyph_Green_RGB_2026.svg`,
+        `${baseDir}/01_Glyph/01_Digital RGB/03_SVG/Digital_Glyph_Black_RGB_2026.svg`,
+        `${baseDir}/01_Glyph/01_Digital RGB/03_SVG/Digital_Glyph_White_RGB_2026.svg`,
+        `${baseDir}/02_Inline/01_Digital RGB/03_SVG/Digital_Inline_Green_RGB_2026.svg`,
+        `${baseDir}/02_Inline/01_Digital RGB/03_SVG/Digital_Inline_Black_RGB_2026.svg`,
+        `${baseDir}/02_Inline/01_Digital RGB/03_SVG/Digital_Inline_White_RGB_2026.svg`,
+        `${baseDir}/03_Stacked/01_Digital RGB/03_SVG/Digital_Stacked_Green_RGB_2026.svg`,
+        `${baseDir}/03_Stacked/01_Digital RGB/03_SVG/Digital_Stacked_Black_RGB_2026.svg`,
+        `${baseDir}/03_Stacked/01_Digital RGB/03_SVG/Digital_Stacked_White_RGB_2026.svg`,
+      ];
+
+      for (const relSvg of expectedSvgs) {
+        const fullPath = path.resolve(process.cwd(), relSvg);
+        assert.ok(fs.existsSync(fullPath), `${relSvg} must exist`);
+      }
+
+      const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf-8");
+      const explorerSource = fs.readFileSync(path.resolve(process.cwd(), "src/app/catalog-explorer.tsx"), "utf-8");
+
+      assert.ok(!pageSource.includes("M12.031 6.172"), "page.tsx must not contain legacy custom WhatsApp SVG path");
+      assert.ok(!explorerSource.includes("M12.031 6.172"), "catalog-explorer.tsx must not contain legacy custom WhatsApp SVG path");
+      assert.ok(pageSource.includes("WhatsAppInlineLogo") && pageSource.includes("WhatsAppGlyph"));
+      assert.ok(explorerSource.includes("WhatsAppStackedLogo") && explorerSource.includes("WhatsAppGlyph"));
+    });
+
+    it("embeds the official Google Business Google Maps iframe in a 3/4 width layout without redundant external map headers", () => {
+      const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf-8");
+      assert.ok(
+        pageSource.includes("https://www.google.com/maps/embed?pb="),
+        "page.tsx must embed Google Maps directly via iframe"
+      );
+      assert.ok(
+        pageSource.includes("0x8f696d4353be2921%3A0x9b834072d3160ae7"),
+        "page.tsx must reference the exact Google Business listing feature ID for Plaza Aragón"
+      );
+      assert.ok(
+        pageSource.includes("lg:col-span-9") && pageSource.includes("lg:col-span-3"),
+        "page.tsx must allocate 3/4 width (9/12 cols) to the map card and 1/4 width (3/12 cols) to the Ficha técnica card"
+      );
+      assert.ok(
+        !pageSource.includes("Abrir en Google Maps"),
+        "page.tsx must not render the redundant external Google Maps button above the iframe"
+      );
+    });
+
+    it("preserves the 4-step leasing process Spanish copy, step order, and WhatsApp contact link", () => {
+      const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/app/page.tsx"), "utf-8");
+      const leaseSectionSource = fs.readFileSync(
+        path.resolve(process.cwd(), "src/app/lease-process-section.tsx"),
+        "utf-8"
+      );
+
+      assert.ok(leaseSectionSource.includes("Proceso de arrendamiento en 4 pasos"));
+      assert.ok(leaseSectionSource.includes("Trámite Ágil y Transparente"));
+      assert.ok(leaseSectionSource.includes("Escribir por WhatsApp →"));
+
+      const steps = ["Paso 01", "Paso 02", "Paso 03", "Paso 04"];
+      let lastIdx = -1;
+      for (const s of steps) {
+        const idx = pageSource.indexOf(s);
+        assert.ok(idx > lastIdx, `${s} must appear in sequential order in page.tsx`);
+        lastIdx = idx;
+      }
     });
   });
 });
