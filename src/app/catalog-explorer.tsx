@@ -207,7 +207,7 @@ export function PlazaInteractiveSection({
             </h1>
 
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-crema/95 sm:text-lg">
-              Locales comerciales modernos de 70 m² con vitrina panorámica, baño privado y medidor independiente en Olanchito, Yoro. Desde L. 8,000/mes.
+              Locales comerciales modernos de 70 m² con vitrina panorámica, baño privado y medidor independiente en Olanchito, Yoro.
             </p>
           </div>
 
@@ -253,7 +253,7 @@ export function PlazaInteractiveSection({
                   Contrato flexible y renovable
                 </dt>
                 <dd className="mt-1 font-display text-2xl font-extrabold tabular-nums text-white sm:text-3xl">
-                  6 a 12+ meses
+                  Desde 6 meses
                 </dd>
                 <p className="mt-0.5 text-xs text-crema/80">
                   Condiciones claras para tu marca
