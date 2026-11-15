@@ -28,6 +28,11 @@ export type SpaceShareData = {
   url: string;
   clipboardText: string;
   whatsappShareUrl: string;
+  facebookShareUrl: string;
+  xShareUrl: string;
+  linkedinShareUrl: string;
+  telegramShareUrl: string;
+  emailShareUrl: string;
   isFree: boolean;
 };
 
@@ -218,6 +223,11 @@ export function buildSpaceShareData(
     url,
     clipboardText: `${text}\n${url}`,
     whatsappShareUrl: `https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${url}`)}`,
+    facebookShareUrl: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`,
+    xShareUrl: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+    linkedinShareUrl: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+    telegramShareUrl: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+    emailShareUrl: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n\n${url}`)}`,
     isFree,
   };
 }

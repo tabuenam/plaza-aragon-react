@@ -21,6 +21,7 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type FormEvent,
   type MouseEvent,
 } from "react";
@@ -43,6 +44,8 @@ const BUSINESS_SECTORS = [
   "Tienda de Tecnología / Óptica",
   "Otro giro comercial",
 ];
+
+const emptySubscribe = () => () => {};
 
 function legacyCopy(text: string): boolean {
   const field = Object.assign(document.createElement("textarea"), { value: text });
@@ -108,6 +111,19 @@ export function PlazaInteractiveSection({
   const [copiedState, setCopiedState] = useState<Record<string, "copied" | "failed" | undefined>>({});
   const [copiedMessage, setCopiedMessage] = useState<Record<string, string | undefined>>({});
   const [highlightedSpaceId, setHighlightedSpaceId] = useState<string | null>(null);
+  const [openShareSpaceId, setOpenShareSpaceId] = useState<string | null>(null);
+  const [dismissedTooltipId, setDismissedTooltipId] = useState<string | null>(null);
+
+  const canNativeShare = useSyncExternalStore(
+    emptySubscribe,
+    () => typeof navigator !== "undefined" && typeof navigator.share === "function",
+    () => false
+  );
+  const siteOrigin = useSyncExternalStore(
+    emptySubscribe,
+    () => window.location.origin,
+    () => "https://plaza-aragon.com"
+  );
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -117,6 +133,8 @@ export function PlazaInteractiveSection({
   const copyTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const lastAnnouncedRef = useRef<string>("");
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shareContainerRefs = useRef<Record<string, HTMLSpanElement | null>>({});
+  const shareBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const modalTitleId = useId();
   const nameInputId = useId();
@@ -380,6 +398,31 @@ export function PlazaInteractiveSection({
     };
   }, [primarySpaces, scrollToSlide]);
 
+  useEffect(() => {
+    if (!openShareSpaceId) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const container = shareContainerRefs.current[openShareSpaceId];
+      if (!container || container.contains(event.target as Node)) return;
+      setOpenShareSpaceId(null);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      const activeId = openShareSpaceId;
+      setOpenShareSpaceId(null);
+      shareBtnRefs.current[activeId]?.focus();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [openShareSpaceId]);
+
   function reportCopyOutcome(spaceId: string, ok: boolean) {
     if (copyTimersRef.current[spaceId]) {
       clearTimeout(copyTimersRef.current[spaceId]);
@@ -404,29 +447,9 @@ export function PlazaInteractiveSection({
     }, 2200);
   }
 
-  async function handleShareSpace(space: Space, index: number) {
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "https://plaza-aragon.com";
-    const shareData = buildSpaceShareData(space, index, origin);
-
-    if (
-      typeof navigator !== "undefined" &&
-      typeof navigator.share === "function" &&
-      window.matchMedia?.("(pointer: coarse)").matches
-    ) {
-      try {
-        await navigator.share({
-          title: shareData.title,
-          text: shareData.text,
-          url: shareData.url,
-        });
-        return;
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") {
-          return;
-        }
-      }
-    }
+  async function handleCopySpaceLink(space: Space, index: number) {
+    const shareData = buildSpaceShareData(space, index, siteOrigin);
+    setOpenShareSpaceId(null);
 
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -441,6 +464,28 @@ export function PlazaInteractiveSection({
       } else {
         reportCopyOutcome(space.id, false);
       }
+    }
+  }
+
+  async function handleNativeShare(space: Space, index: number) {
+    const shareData = buildSpaceShareData(space, index, siteOrigin);
+    setOpenShareSpaceId(null);
+
+    if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: shareData.title,
+        text: shareData.text,
+        url: shareData.url,
+      });
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return;
+      }
+      await handleCopySpaceLink(space, index);
     }
   }
 
@@ -774,6 +819,10 @@ export function PlazaInteractiveSection({
               const tags = getSpaceCatalogTags(space, idx);
               const isFree = space.status === "available" || space.status === "construction";
               const isHighlighted = highlightedSpaceId === space.id;
+              const isShareMenuOpen = openShareSpaceId === space.id;
+              const shareData = isShareMenuOpen
+                ? buildSpaceShareData(space, idx, siteOrigin)
+                : null;
               const ctaLabel =
                 space.status === "available"
                   ? "Solicitar este local"
@@ -789,9 +838,9 @@ export function PlazaInteractiveSection({
                   role="group"
                   aria-roledescription="diapositiva"
                   aria-label={`${idx + 1} de ${totalSlides}`}
-                  className={`card scroll-mt-24 flex w-[86%] shrink-0 snap-center flex-col justify-between transition duration-200 hover:-translate-y-0.5 hover:shadow-md sm:w-[72%] md:w-[46%] lg:w-[calc((100%-2.5rem)/3)] lg:snap-start ${
-                    isHighlighted ? "ring-2 ring-turquesa shadow-lg" : ""
-                  }`}
+                  className={`card scroll-mt-24 flex w-[86%] shrink-0 snap-center flex-col justify-between transition duration-200 hover:shadow-md sm:w-[72%] md:w-[46%] lg:w-[calc((100%-2.5rem)/3)] lg:snap-start ${
+                    isShareMenuOpen ? "relative z-20" : "relative hover:-translate-y-0.5"
+                  } ${isHighlighted ? "ring-2 ring-turquesa shadow-lg" : ""}`}
                 >
                   <div>
                     <SpaceGallery
@@ -841,41 +890,54 @@ export function PlazaInteractiveSection({
                     </ul>
                   </div>
 
-                  <div
-                    className={`mt-6 flex items-center gap-2 border-t border-crema/70 pt-4 ${
-                      isFree ? "flex-wrap" : ""
-                    }`}
-                  >
+                  <div className="mt-6 flex items-center gap-2 border-t border-crema/70 pt-4">
                     <button
                       type="button"
                       onClick={() => openWaitlistModal(meta.fullLabel)}
                       data-testid={`waitlist-card-cta-${idx + 1}`}
-                      className={`btn-primary min-h-11 px-4 py-2.5 text-sm ${
-                        isFree ? "flex-1 basis-[10.5rem]" : "flex-1"
-                      }`}
+                      className="btn-primary min-h-11 flex-1 px-4 py-2.5 text-sm"
                     >
                       <span>{ctaLabel}</span>
                       <span aria-hidden="true">→</span>
                     </button>
 
                     <span
-                      className={`relative inline-flex ${
-                        isFree ? "flex-1 basis-[8.5rem] sm:flex-initial" : "shrink-0"
-                      }`}
+                      ref={(el) => {
+                        shareContainerRefs.current[space.id] = el;
+                      }}
+                      className="relative inline-flex shrink-0"
                     >
                       <button
+                        ref={(el) => {
+                          shareBtnRefs.current[space.id] = el;
+                        }}
                         type="button"
-                        onClick={() => handleShareSpace(space, idx)}
+                        onClick={() => {
+                          setDismissedTooltipId(null);
+                          setOpenShareSpaceId((prev) => (prev === space.id ? null : space.id));
+                        }}
+                        onPointerLeave={() => {
+                          if (dismissedTooltipId === space.id) setDismissedTooltipId(null);
+                        }}
+                        onBlur={() => {
+                          if (dismissedTooltipId === space.id) setDismissedTooltipId(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape" && !isShareMenuOpen) {
+                            setDismissedTooltipId(space.id);
+                          }
+                        }}
                         data-testid={`share-space-btn-${idx + 1}`}
                         data-copied={copiedState[space.id] === "copied" ? "" : undefined}
                         data-failed={copiedState[space.id] === "failed" ? "" : undefined}
-                        aria-label={isFree ? undefined : `Compartir ${meta.title}`}
-                        title={`Compartir ${meta.title}`}
-                        className={
+                        aria-label={`Compartir ${meta.title}`}
+                        aria-haspopup="dialog"
+                        aria-expanded={isShareMenuOpen}
+                        className={`peer inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-xl border transition duration-150 active:scale-[0.97] touch-manipulation ${
                           isFree
-                            ? "inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-turquesa/35 bg-turquesa-claro/65 px-3.5 py-2 text-xs font-bold text-azul transition duration-150 hover:border-turquesa hover:bg-turquesa-claro active:scale-[0.97] touch-manipulation sm:text-sm"
-                            : "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-xl border border-crema bg-arena text-tinta transition duration-150 hover:border-azul/35 hover:bg-crema/60 hover:text-azul active:scale-[0.97] touch-manipulation"
-                        }
+                            ? "border-turquesa/35 bg-turquesa-claro/65 text-azul hover:border-turquesa hover:bg-turquesa-claro"
+                            : "border-crema bg-arena text-tinta hover:border-azul/35 hover:bg-crema/60 hover:text-azul"
+                        }`}
                       >
                         {copiedState[space.id] === "copied" ? (
                           <svg
@@ -903,12 +965,20 @@ export function PlazaInteractiveSection({
                             />
                           </svg>
                         )}
-                        {isFree && (
-                          <span>
-                            Compartir local<span className="sr-only"> {meta.title}</span>
-                          </span>
-                        )}
                       </button>
+
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none absolute -top-9 right-0 z-20 whitespace-nowrap rounded-lg bg-tinta px-2.5 py-1 text-[11px] font-bold text-white shadow-md transition-opacity duration-150 ${
+                          isShareMenuOpen ||
+                          copiedState[space.id] ||
+                          dismissedTooltipId === space.id
+                            ? "opacity-0"
+                            : "opacity-0 peer-hover:opacity-100 peer-focus-visible:opacity-100"
+                        }`}
+                      >
+                        Compartir
+                      </span>
 
                       <span
                         role="status"
@@ -918,6 +988,141 @@ export function PlazaInteractiveSection({
                       >
                         {copiedMessage[space.id] ?? ""}
                       </span>
+
+                      {shareData && (
+                        <div
+                          data-testid={`share-menu-${idx + 1}`}
+                          role="dialog"
+                          aria-label={`Compartir ${meta.title}`}
+                          className="absolute bottom-full right-0 z-30 mb-2 w-64 max-w-[calc(100vw-4rem)] rounded-2xl border border-crema bg-white p-3 text-left shadow-xl ring-1 ring-tinta/5"
+                        >
+                          <div className="mb-2 flex items-center justify-between gap-2 border-b border-crema/80 pb-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-azul">
+                              Compartir en redes
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setOpenShareSpaceId(null)}
+                              aria-label={`Cerrar menú para compartir ${meta.title}`}
+                              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg bg-arena text-xs font-bold text-tinta transition hover:bg-crema"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <a
+                              href={shareData.whatsappShareUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setOpenShareSpaceId(null)}
+                              data-testid={`share-whatsapp-${idx + 1}`}
+                              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-crema/80 bg-arena/60 px-2.5 py-2 text-xs font-semibold text-tinta transition hover:border-whatsapp/50 hover:bg-whatsapp/10 hover:text-whatsapp-oscuro"
+                            >
+                              <WhatsAppGlyph variant="green" className="h-4 w-4 shrink-0" size={16} />
+                              <span>WhatsApp</span>
+                            </a>
+
+                            <a
+                              href={shareData.facebookShareUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setOpenShareSpaceId(null)}
+                              data-testid={`share-facebook-${idx + 1}`}
+                              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-crema/80 bg-arena/60 px-2.5 py-2 text-xs font-semibold text-tinta transition hover:border-[#1877F2]/40 hover:bg-[#1877F2]/10 hover:text-[#1877F2]"
+                            >
+                              <svg className="h-4 w-4 shrink-0 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987H7.898V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
+                              </svg>
+                              <span>Facebook</span>
+                            </a>
+
+                            <a
+                              href={shareData.xShareUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setOpenShareSpaceId(null)}
+                              data-testid={`share-x-${idx + 1}`}
+                              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-crema/80 bg-arena/60 px-2.5 py-2 text-xs font-semibold text-tinta transition hover:border-tinta/40 hover:bg-tinta/10"
+                            >
+                              <svg className="h-3.5 w-3.5 shrink-0 text-tinta" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                              </svg>
+                              <span>X (Twitter)</span>
+                            </a>
+
+                            <a
+                              href={shareData.linkedinShareUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setOpenShareSpaceId(null)}
+                              data-testid={`share-linkedin-${idx + 1}`}
+                              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-crema/80 bg-arena/60 px-2.5 py-2 text-xs font-semibold text-tinta transition hover:border-[#0A66C2]/40 hover:bg-[#0A66C2]/10 hover:text-[#0A66C2]"
+                            >
+                              <svg className="h-4 w-4 shrink-0 text-[#0A66C2]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                              </svg>
+                              <span>LinkedIn</span>
+                            </a>
+
+                            <a
+                              href={shareData.telegramShareUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setOpenShareSpaceId(null)}
+                              data-testid={`share-telegram-${idx + 1}`}
+                              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-crema/80 bg-arena/60 px-2.5 py-2 text-xs font-semibold text-tinta transition hover:border-[#229ED9]/40 hover:bg-[#229ED9]/10 hover:text-[#229ED9]"
+                            >
+                              <svg className="h-4 w-4 shrink-0 text-[#229ED9]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.05-.49-.82-.27-1.47-.42-1.42-.88.03-.24.37-.48 1.02-.74 3.99-1.74 6.65-2.89 7.99-3.44 3.81-1.58 4.6-1.85 5.12-1.86.11 0 .37.03.54.17.14.12.18.28.2.45-.01.07-.01.24-.02.33z" />
+                              </svg>
+                              <span>Telegram</span>
+                            </a>
+
+                            <a
+                              href={shareData.emailShareUrl}
+                              onClick={() => setOpenShareSpaceId(null)}
+                              data-testid={`share-email-${idx + 1}`}
+                              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-crema/80 bg-arena/60 px-2.5 py-2 text-xs font-semibold text-tinta transition hover:border-azul/40 hover:bg-azul/10 hover:text-azul"
+                            >
+                              <svg className="h-4 w-4 shrink-0 text-azul" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              <span>Correo</span>
+                            </a>
+                          </div>
+
+                          <hr className="my-2 border-crema/80" />
+
+                          <div className="flex flex-col gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleCopySpaceLink(space, idx)}
+                              data-testid={`share-copy-${idx + 1}`}
+                              className="inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-crema bg-arena px-3 py-2 text-xs font-bold text-tinta transition hover:border-azul/35 hover:bg-crema/60 hover:text-azul"
+                            >
+                              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              <span>Copiar enlace</span>
+                            </button>
+
+                            {canNativeShare && (
+                              <button
+                                type="button"
+                                onClick={() => handleNativeShare(space, idx)}
+                                data-testid={`share-native-${idx + 1}`}
+                                className="inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-turquesa-claro/70 px-3 py-2 text-xs font-bold text-azul transition hover:bg-turquesa-claro"
+                              >
+                                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                <span>Más opciones…</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </span>
                   </div>
                 </article>

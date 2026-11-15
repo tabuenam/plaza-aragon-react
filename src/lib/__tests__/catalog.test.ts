@@ -151,7 +151,7 @@ describe("catalog utilities", () => {
       assert.ok(third.description.includes("70 m²"));
     });
 
-    it("builds Spanish share payload with HNL rent, deep-link URL, and WhatsApp share URL", () => {
+    it("builds Spanish share payload with HNL rent, deep-link URL, and social share URLs", () => {
       const space = getMockSpace({
         id: "mod-3",
         name: "Local Aguán",
@@ -161,20 +161,28 @@ describe("catalog utilities", () => {
       });
 
       const share = buildSpaceShareData(space, 2, "https://plaza-aragon.com///");
+      const expectedUrl = "https://plaza-aragon.com/#local-card-mod-3";
 
       assert.equal(share.isFree, true);
-      assert.equal(share.url, "https://plaza-aragon.com/#local-card-mod-3");
+      assert.equal(share.url, expectedUrl);
       assert.equal(share.title, "Local Aguán disponible en Plaza Aragón • Olanchito");
       assert.match(share.text, /Cuota mensual/i);
       assert.match(share.text, /9[.,]200\/mes/);
       assert.ok(!share.text.toLowerCase().includes("canon"));
       assert.equal(share.clipboardText, `${share.text}\n${share.url}`);
       assert.ok(share.whatsappShareUrl.startsWith("https://api.whatsapp.com/send?text="));
-      assert.ok(
-        decodeURIComponent(share.whatsappShareUrl).includes(
-          "https://plaza-aragon.com/#local-card-mod-3"
-        )
-      );
+      assert.ok(decodeURIComponent(share.whatsappShareUrl).includes(expectedUrl));
+      assert.ok(share.facebookShareUrl.startsWith("https://www.facebook.com/sharer/sharer.php?u="));
+      assert.ok(decodeURIComponent(share.facebookShareUrl).includes(expectedUrl));
+      assert.ok(share.xShareUrl.startsWith("https://twitter.com/intent/tweet?text="));
+      assert.ok(decodeURIComponent(share.xShareUrl).includes(expectedUrl));
+      assert.ok(share.linkedinShareUrl.startsWith("https://www.linkedin.com/sharing/share-offsite/?url="));
+      assert.ok(decodeURIComponent(share.linkedinShareUrl).includes(expectedUrl));
+      assert.ok(share.telegramShareUrl.startsWith("https://t.me/share/url?url="));
+      assert.ok(decodeURIComponent(share.telegramShareUrl).includes(expectedUrl));
+      assert.ok(share.emailShareUrl.startsWith("mailto:?subject="));
+      assert.ok(decodeURIComponent(share.emailShareUrl).includes(share.title));
+      assert.ok(decodeURIComponent(share.emailShareUrl).includes(expectedUrl));
     });
 
     it("handles construction and occupied share copy with invalid price fallback", () => {
