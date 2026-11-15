@@ -206,6 +206,68 @@ export async function updateSpaceStatusAction(_prevState: FormState, formData: F
   return { ok: true, message: "Estado del local actualizado correctamente." };
 }
 
+function parseJsonStringArray(raw: FormDataEntryValue | null): string[] {
+  if (typeof raw !== "string") return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  } catch {
+    return [];
+  }
+}
+
+async function uploadSpaceImages(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"],
+  files: File[],
+  folderPrefix: string
+): Promise<{ urls: string[]; uploadedPaths: string[]; error: string | null }> {
+  const urls: string[] = [];
+  const uploadedPaths: string[] = [];
+  const adminClient = createSupabaseAdminClient();
+
+  for (const file of files) {
+    if (!file || file.size <= 0 || typeof file.arrayBuffer !== "function") continue;
+    const { ext: safeExt } = sanitizeStorageFileName(file.name, ["jpg", "jpeg", "png", "webp"]);
+    const filePath = `${folderPrefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
+    const arrayBuffer = await file.arrayBuffer();
+    const fileBuffer = Buffer.from(arrayBuffer);
+    const contentType = file.type || "image/jpeg";
+
+    let { error: uploadError } = await supabase.storage.from("spaces").upload(filePath, fileBuffer, {
+      contentType,
+      upsert: false,
+    });
+
+    if (uploadError) {
+      const fallback = await adminClient.storage.from("spaces").upload(filePath, fileBuffer, {
+        contentType,
+        upsert: false,
+      });
+      uploadError = fallback.error;
+    }
+
+    if (uploadError) {
+      if (uploadedPaths.length > 0) {
+        await adminClient.storage.from("spaces").remove(uploadedPaths);
+      }
+      return {
+        urls: [],
+        uploadedPaths: [],
+        error: "No se pudo subir una de las fotografías del local. Intente de nuevo.",
+      };
+    }
+
+    uploadedPaths.push(filePath);
+    const { data: publicUrlData } = supabase.storage.from("spaces").getPublicUrl(filePath);
+    if (publicUrlData?.publicUrl) {
+      urls.push(publicUrlData.publicUrl);
+    }
+  }
+
+  return { urls, uploadedPaths, error: null };
+}
+
 export async function updateSpaceAction(_prevState: FormState, formData: FormData): Promise<FormState> {
   const user = await requireAdmin();
   const spaceId = String(formData.get("space_id") ?? "");
@@ -214,41 +276,48 @@ export async function updateSpaceAction(_prevState: FormState, formData: FormDat
   const status = String(formData.get("status") ?? "") as SpaceStatus;
   const price = Number(formData.get("price"));
   const sortOrder = Number(formData.get("sort_order") ?? 0);
+  const businessName = String(formData.get("business_name") ?? "").trim();
+  const businessDescription = String(formData.get("business_description") ?? "").trim();
 
-  const validationError = validateSpaceUpdateInput({ spaceId, name, status, price });
+  const newImages = (formData.getAll("new_images") as File[]).filter(
+    (file) => file && file.size > 0 && typeof file.arrayBuffer === "function"
+  );
+  const newBusinessImages = (formData.getAll("new_business_images") as File[]).filter(
+    (file) => file && file.size > 0 && typeof file.arrayBuffer === "function"
+  );
+
+  const validationError = validateSpaceUpdateInput({
+    spaceId,
+    name,
+    status,
+    price,
+    businessName,
+    businessDescription,
+    businessImageByteSizes: newBusinessImages.map((file) => file.size),
+  });
   if (validationError) return validationError;
 
-  const existingImagesRaw = String(formData.get("existing_images") ?? "[]");
-  let finalImageUrls: string[] = [];
-  try {
-    finalImageUrls = JSON.parse(existingImagesRaw);
-  } catch {
-    finalImageUrls = [];
-  }
+  const existingImageUrls = parseJsonStringArray(formData.get("existing_images"));
+  const existingBusinessImageUrls = parseJsonStringArray(formData.get("existing_business_images"));
 
   const supabase = user.supabase;
-  const newImages = formData.getAll("new_images") as File[];
-
-  for (const file of newImages) {
-    if (file && file.size > 0 && typeof file.arrayBuffer === "function") {
-      const { ext: safeExt } = sanitizeStorageFileName(file.name, ["jpg", "jpeg", "png", "webp"]);
-      const filePath = `${spaceId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
-      const arrayBuffer = await file.arrayBuffer();
-      const fileBuffer = Buffer.from(arrayBuffer);
-
-      const { error: uploadError } = await supabase.storage.from("spaces").upload(filePath, fileBuffer, {
-        contentType: file.type || "image/jpeg",
-        upsert: false,
-      });
-
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage.from("spaces").getPublicUrl(filePath);
-        if (publicUrlData?.publicUrl) {
-          finalImageUrls.push(publicUrlData.publicUrl);
-        }
-      }
-    }
+  const spaceUpload = await uploadSpaceImages(supabase, newImages, spaceId);
+  if (spaceUpload.error) {
+    return { ok: false, message: spaceUpload.error };
   }
+
+  const businessUpload = await uploadSpaceImages(supabase, newBusinessImages, `${spaceId}/business`);
+  if (businessUpload.error) {
+    if (spaceUpload.uploadedPaths.length > 0) {
+      const adminClient = createSupabaseAdminClient();
+      await adminClient.storage.from("spaces").remove(spaceUpload.uploadedPaths);
+    }
+    return { ok: false, message: businessUpload.error };
+  }
+
+  const allUploadedPaths = [...spaceUpload.uploadedPaths, ...businessUpload.uploadedPaths];
+  const finalImageUrls = [...existingImageUrls, ...spaceUpload.urls];
+  const finalBusinessImageUrls = [...existingBusinessImageUrls, ...businessUpload.urls];
 
   const { error } = await supabase
     .from("spaces")
@@ -259,10 +328,17 @@ export async function updateSpaceAction(_prevState: FormState, formData: FormDat
       status,
       sort_order: isNaN(sortOrder) ? 0 : sortOrder,
       image_urls: finalImageUrls,
+      business_name: businessName || null,
+      business_description: businessDescription || null,
+      business_image_urls: finalBusinessImageUrls,
     })
     .eq("id", spaceId);
 
   if (error) {
+    if (allUploadedPaths.length > 0) {
+      const adminClient = createSupabaseAdminClient();
+      await adminClient.storage.from("spaces").remove(allUploadedPaths);
+    }
     return { ok: false, message: "Error al actualizar los datos del local." };
   }
 

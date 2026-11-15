@@ -15,7 +15,10 @@ export async function getPublicSpaces(): Promise<Space[]> {
       .order("sort_order", { ascending: true });
 
     if (error || !data) return [];
-    return data as Space[];
+    return (data as Space[]).map((space) => ({
+      ...space,
+      business_image_urls: Array.isArray(space.business_image_urls) ? space.business_image_urls : [],
+    }));
   } catch {
     return [];
   }
@@ -108,6 +111,7 @@ export async function getAllSpacesWithActiveLease(): Promise<
 
   return spaces.map((s) => ({
     ...s,
+    business_image_urls: Array.isArray(s.business_image_urls) ? s.business_image_urls : [],
     current_lease: leaseMap.get(s.id) ?? null,
   })) as (Space & { current_lease?: { tenant: Pick<Tenant, "name" | "contact_info">; monthly_rent: number } | null })[];
 }

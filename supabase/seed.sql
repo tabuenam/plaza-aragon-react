@@ -1,17 +1,19 @@
 create extension if not exists pgcrypto;
 
-insert into public.spaces (id, name, description, price, status, sort_order)
+insert into public.spaces (id, name, description, price, status, business_name, business_description, sort_order)
 values
-  ('11111111-1111-1111-1111-111111111111', 'Local 1', 'Local comercial en planta baja con frente a la calle, ideal para tienda o consultorio.', 8000, 'occupied', 1),
-  ('22222222-2222-2222-2222-222222222222', 'Local 2', 'Local comercial en planta baja con amplia vitrina y excelente visibilidad.', 8000, 'occupied', 2),
-  ('33333333-3333-3333-3333-333333333333', 'Local 3', 'Local comercial nuevo, actualmente en construcción. Reserva el tuyo.', 8500, 'construction', 3),
-  ('44444444-4444-4444-4444-444444444444', 'Local 4', 'Local comercial nuevo, actualmente en construcción. Reserva el tuyo.', 8500, 'construction', 4),
-  ('55555555-5555-5555-5555-555555555555', 'Local 5', 'Local comercial nuevo, actualmente en construcción. Reserva el tuyo.', 9000, 'construction', 5)
+  ('11111111-1111-1111-1111-111111111111', 'Local 1', 'Local comercial en planta baja con frente a la calle, ideal para tienda o consultorio.', 8000, 'occupied', 'Farmacia San José', 'Atención farmacéutica, medicamentos recetados, vitaminas y productos de cuidado personal con horario extendido en el centro de Olanchito.', 1),
+  ('22222222-2222-2222-2222-222222222222', 'Local 2', 'Local comercial en planta baja con amplia vitrina y excelente visibilidad.', 8000, 'occupied', 'Café Olanchito', 'Café de especialidad de altura, repostería artesanal recién horneada y espacio climatizado para reuniones en el corazón de la ciudad.', 2),
+  ('33333333-3333-3333-3333-333333333333', 'Local 3', 'Local comercial nuevo, actualmente en construcción. Reserva el tuyo.', 8500, 'construction', null, null, 3),
+  ('44444444-4444-4444-4444-444444444444', 'Local 4', 'Local comercial nuevo, actualmente en construcción. Reserva el tuyo.', 8500, 'construction', null, null, 4),
+  ('55555555-5555-5555-5555-555555555555', 'Local 5', 'Local comercial nuevo, actualmente en construcción. Reserva el tuyo.', 9000, 'construction', null, null, 5)
 on conflict (id) do update set
   name = excluded.name,
   description = excluded.description,
   price = excluded.price,
   status = excluded.status,
+  business_name = excluded.business_name,
+  business_description = excluded.business_description,
   sort_order = excluded.sort_order;
 
 insert into auth.users (

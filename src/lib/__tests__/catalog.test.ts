@@ -8,6 +8,7 @@ import {
   getSpaceCatalogTags,
   getSpaceDisplayMeta,
   getSpaceHighlights,
+  hasSpaceBusinessShowcase,
   isSpaceFree,
   PACURA_TAGS,
 } from "../catalog.ts";
@@ -170,6 +171,7 @@ describe("catalog utilities", () => {
       assert.match(share.text, /9[.,]200\/mes/);
       assert.ok(!share.text.toLowerCase().includes("canon"));
       assert.equal(share.clipboardText, `${share.text}\n${share.url}`);
+      assert.equal(share.instagramUrl, "https://www.instagram.com/");
       assert.ok(share.whatsappShareUrl.startsWith("https://api.whatsapp.com/send?text="));
       assert.ok(decodeURIComponent(share.whatsappShareUrl).includes(expectedUrl));
       assert.ok(share.facebookShareUrl.startsWith("https://www.facebook.com/sharer/sharer.php?u="));
@@ -218,6 +220,80 @@ describe("catalog utilities", () => {
       );
       assert.equal(occupiedShare.isFree, false);
       assert.match(occupiedShare.title, /^Local Pacura/);
+      assert.equal(occupiedShare.instagramUrl, "https://www.instagram.com/");
+    });
+
+    it("enables business showcase flip only for occupied spaces with populated showcase fields", () => {
+      assert.equal(
+        hasSpaceBusinessShowcase(
+          getMockSpace({
+            status: "occupied",
+            business_name: "Farmacia San José",
+          })
+        ),
+        true
+      );
+      assert.equal(
+        hasSpaceBusinessShowcase(
+          getMockSpace({
+            status: "occupied",
+            business_description: "Café artesanal en el centro.",
+          })
+        ),
+        true
+      );
+      assert.equal(
+        hasSpaceBusinessShowcase(
+          getMockSpace({
+            status: "occupied",
+            business_image_urls: ["https://example.com/business-1.jpg"],
+          })
+        ),
+        true
+      );
+
+      assert.equal(
+        hasSpaceBusinessShowcase(
+          getMockSpace({
+            status: "occupied",
+            business_name: "   ",
+            business_description: "\n ",
+            business_image_urls: [],
+          })
+        ),
+        false
+      );
+      assert.equal(
+        hasSpaceBusinessShowcase(
+          getMockSpace({
+            status: "occupied",
+            business_name: null,
+            business_description: null,
+            business_image_urls: undefined,
+          })
+        ),
+        false
+      );
+      assert.equal(
+        hasSpaceBusinessShowcase(
+          getMockSpace({
+            status: "available",
+            business_name: "Farmacia San José",
+            business_description: "Texto previo",
+            business_image_urls: ["https://example.com/business-1.jpg"],
+          })
+        ),
+        false
+      );
+      assert.equal(
+        hasSpaceBusinessShowcase(
+          getMockSpace({
+            status: "construction",
+            business_name: "Próxima tienda",
+          })
+        ),
+        false
+      );
     });
   });
 });

@@ -9,6 +9,9 @@ export type Space = {
   price: number;
   status: SpaceStatus;
   image_urls: string[];
+  business_name?: string | null;
+  business_description?: string | null;
+  business_image_urls?: string[];
   sort_order: number;
 };
 

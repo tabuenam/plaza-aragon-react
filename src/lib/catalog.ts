@@ -27,6 +27,7 @@ export type SpaceShareData = {
   text: string;
   url: string;
   clipboardText: string;
+  instagramUrl: string;
   whatsappShareUrl: string;
   facebookShareUrl: string;
   xShareUrl: string;
@@ -187,6 +188,16 @@ export function isSpaceFree(space: Space): boolean {
   return space.status === "available" || space.status === "construction";
 }
 
+export function hasSpaceBusinessShowcase(space: Space): boolean {
+  if (space.status !== "occupied") return false;
+  const hasName = Boolean(space.business_name?.trim());
+  const hasDescription = Boolean(space.business_description?.trim());
+  const hasImages =
+    Array.isArray(space.business_image_urls) &&
+    space.business_image_urls.some((url) => Boolean(url?.trim()));
+  return hasName || hasDescription || hasImages;
+}
+
 export function buildSpaceShareData(
   space: Space,
   index: number,
@@ -222,6 +233,7 @@ export function buildSpaceShareData(
     text,
     url,
     clipboardText: `${text}\n${url}`,
+    instagramUrl: "https://www.instagram.com/",
     whatsappShareUrl: `https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${url}`)}`,
     facebookShareUrl: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`,
     xShareUrl: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,

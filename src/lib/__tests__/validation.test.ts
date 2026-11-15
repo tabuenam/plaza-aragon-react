@@ -3,10 +3,14 @@ import { describe, it } from "node:test";
 import {
   isValidPaymentType,
   isValidSpaceStatus,
+  MAX_BUSINESS_DESCRIPTION_LENGTH,
+  MAX_BUSINESS_NAME_LENGTH,
+  MAX_SPACE_IMAGE_BYTES,
   sanitizeStorageFileName,
   validateAdminPaymentInput,
   validateLeaseInput,
   validatePaymentInput,
+  validateSpaceBusinessShowcaseInput,
   validateSpaceUpdateInput,
 } from "../validation.ts";
 
@@ -24,6 +28,24 @@ describe("domain validation utilities", () => {
         price: 8000,
       });
       assert.equal(err, null);
+
+      const showcaseErr = validateSpaceUpdateInput({
+        spaceId: "space-1",
+        name: "Local 1",
+        status: "occupied",
+        price: 8000,
+        businessName: "Farmacia San José",
+        businessDescription: "Atención farmacéutica diaria en el corazón de Olanchito.",
+        businessImageByteSizes: [512_000, MAX_SPACE_IMAGE_BYTES],
+      });
+      assert.equal(showcaseErr, null);
+
+      const standaloneShowcaseErr = validateSpaceBusinessShowcaseInput({
+        businessName: "a".repeat(MAX_BUSINESS_NAME_LENGTH),
+        businessDescription: "b".repeat(MAX_BUSINESS_DESCRIPTION_LENGTH),
+        imageByteSizes: [1024, MAX_SPACE_IMAGE_BYTES],
+      });
+      assert.equal(standaloneShowcaseErr, null);
     });
 
     it("accepts valid lease input when endDate is after startDate", () => {
@@ -143,6 +165,40 @@ describe("domain validation utilities", () => {
         })?.ok,
         false
       );
+    });
+
+    it("rejects space business showcase inputs exceeding length or image size limits", () => {
+      const longNameErr = validateSpaceUpdateInput({
+        spaceId: "1",
+        name: "Local 1",
+        status: "occupied",
+        price: 8000,
+        businessName: "x".repeat(MAX_BUSINESS_NAME_LENGTH + 1),
+      });
+      assert.equal(longNameErr?.ok, false);
+      assert.match(longNameErr?.message ?? "", /80 caracteres/);
+
+      const longDescErr = validateSpaceBusinessShowcaseInput({
+        businessName: "Café Olanchito",
+        businessDescription: "y".repeat(MAX_BUSINESS_DESCRIPTION_LENGTH + 1),
+      });
+      assert.equal(longDescErr?.ok, false);
+      assert.match(longDescErr?.message ?? "", /350 caracteres/);
+
+      const oversizedImageErr = validateSpaceUpdateInput({
+        spaceId: "1",
+        name: "Local 1",
+        status: "occupied",
+        price: 8000,
+        businessImageByteSizes: [120_000, MAX_SPACE_IMAGE_BYTES + 1],
+      });
+      assert.equal(oversizedImageErr?.ok, false);
+      assert.match(oversizedImageErr?.message ?? "", /4 MB/);
+
+      const invalidImageSizeErr = validateSpaceBusinessShowcaseInput({
+        imageByteSizes: [Number.NaN],
+      });
+      assert.equal(invalidImageSizeErr?.ok, false);
     });
 
     it("rejects lease inputs with missing fields, non-positive rent, or inverted dates", () => {

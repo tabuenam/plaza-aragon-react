@@ -27,6 +27,10 @@ const fallbackSpaces: Space[] = [
     price: 8000,
     status: "occupied",
     image_urls: [],
+    business_name: "Farmacia San José",
+    business_description:
+      "Atención farmacéutica profesional, medicamentos recetados, suplementos y productos de cuidado personal con acceso directo sobre la Avenida el Caliche.",
+    business_image_urls: [],
     sort_order: 1,
   },
   {
@@ -37,6 +41,10 @@ const fallbackSpaces: Space[] = [
     price: 8000,
     status: "occupied",
     image_urls: [],
+    business_name: "Café Olanchito",
+    business_description:
+      "Café de especialidad de altura, repostería artesanal recién horneada y espacio climatizado para reuniones en el corazón de la ciudad.",
+    business_image_urls: [],
     sort_order: 2,
   },
 ];

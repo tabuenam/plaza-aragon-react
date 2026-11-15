@@ -5,6 +5,9 @@ create table public.spaces (
   price numeric(10, 2) not null default 0 check (price >= 0),
   status text not null default 'available' check (status in ('available', 'occupied', 'construction')),
   image_urls text[] not null default '{}',
+  business_name text check (business_name is null or char_length(business_name) <= 80),
+  business_description text check (business_description is null or char_length(business_description) <= 350),
+  business_image_urls text[] not null default '{}',
   sort_order int not null default 0,
   created_at timestamptz not null default now()
 );
