@@ -2,7 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabasePublicClient } from "@/lib/supabase/static";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
-import type { AdminLease, AdminTenant, LeaseWithRelations, Payment, Space, Tenant } from "@/lib/types";
+import type { AdminLease, AdminTenant, LeaseWithRelations, Payment, PaymentType, Space, Tenant } from "@/lib/types";
 
 export async function getPublicSpaces(): Promise<Space[]> {
   "use cache";
@@ -15,7 +15,10 @@ export async function getPublicSpaces(): Promise<Space[]> {
       .order("sort_order", { ascending: true });
 
     if (error || !data) return [];
-    return data as Space[];
+    return (data as Space[]).map((space) => ({
+      ...space,
+      business_image_urls: Array.isArray(space.business_image_urls) ? space.business_image_urls : [],
+    }));
   } catch {
     return [];
   }
@@ -70,13 +73,16 @@ export async function getTenantPayments(leaseId: string): Promise<Payment[]> {
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];
-  return data as Payment[];
+  return (data as Payment[]).map((p) => ({
+    ...p,
+    payment_type: (p.payment_type ?? "rent") as PaymentType,
+  }));
 }
 
 export type AdminPayment = Payment & {
   lease: {
     id: string;
-    space: Pick<Space, "id" | "name">;
+    space: Pick<Space, "id" | "name"> & { sort_order?: number };
     tenant: Pick<Tenant, "id" | "name" | "contact_info">;
   };
   signed_receipt_url?: string;
@@ -105,6 +111,7 @@ export async function getAllSpacesWithActiveLease(): Promise<
 
   return spaces.map((s) => ({
     ...s,
+    business_image_urls: Array.isArray(s.business_image_urls) ? s.business_image_urls : [],
     current_lease: leaseMap.get(s.id) ?? null,
   })) as (Space & { current_lease?: { tenant: Pick<Tenant, "name" | "contact_info">; monthly_rent: number } | null })[];
 }
@@ -113,7 +120,7 @@ export async function getAdminPayments(year?: number, month?: number): Promise<A
   const supabase = await createSupabaseServerClient();
   let query = supabase
     .from("payments")
-    .select("*, lease:leases(id, space:spaces(id, name), tenant:tenants(id, name, contact_info))")
+    .select("*, lease:leases(id, space:spaces(id, name, sort_order), tenant:tenants(id, name, contact_info))")
     .order("period_year", { ascending: false })
     .order("period_month", { ascending: false })
     .order("created_at", { ascending: false });
@@ -124,7 +131,10 @@ export async function getAdminPayments(year?: number, month?: number): Promise<A
   const { data, error } = await query;
   if (error || !data) return [];
 
-  const payments = data as unknown as AdminPayment[];
+  const payments = (data as unknown as AdminPayment[]).map((p) => ({
+    ...p,
+    payment_type: (p.payment_type ?? "rent") as PaymentType,
+  }));
 
   const paths = payments.map((p) => p.receipt_path).filter(Boolean);
   if (paths.length > 0) {

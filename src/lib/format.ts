@@ -120,3 +120,66 @@ export function groupPaymentsByYear<
       };
     });
 }
+
+export type ElectricityDelinquencyLeaseInput = {
+  id: string;
+  start_date: string;
+  space: { id: string; name: string };
+  tenant: { id: string; name: string; contact_info: string };
+};
+
+export type ElectricityDelinquencyPaymentInput = {
+  lease_id: string;
+  payment_type?: string;
+  period_month: number;
+  period_year: number;
+  status: string;
+};
+
+export type ElectricityDelinquentLease = {
+  leaseId: string;
+  spaceId: string;
+  spaceName: string;
+  tenantId: string;
+  tenantName: string;
+  tenantContact: string;
+  missingPeriods: Period[];
+};
+
+export function getElectricityDelinquentLeases(
+  activeLeases: ElectricityDelinquencyLeaseInput[],
+  payments: ElectricityDelinquencyPaymentInput[],
+  cur: Period = currentPeriod()
+): ElectricityDelinquentLease[] {
+  const windowPeriods = [shiftPeriod(cur, -2), shiftPeriod(cur, -1), cur];
+  const delinquent: ElectricityDelinquentLease[] = [];
+
+  for (const lease of activeLeases) {
+    const startPeriod = periodOfDate(lease.start_date);
+    if (comparePeriods(startPeriod, windowPeriods[0]) > 0) {
+      continue;
+    }
+
+    const hasElectricityReceipt = payments.some(
+      (p) =>
+        p.lease_id === lease.id &&
+        (p.payment_type ?? "rent") === "electricity" &&
+        (p.status === "verified" || p.status === "pending") &&
+        windowPeriods.some((wp) => wp.year === p.period_year && wp.month === p.period_month)
+    );
+
+    if (!hasElectricityReceipt) {
+      delinquent.push({
+        leaseId: lease.id,
+        spaceId: lease.space.id,
+        spaceName: lease.space.name,
+        tenantId: lease.tenant.id,
+        tenantName: lease.tenant.name,
+        tenantContact: lease.tenant.contact_info,
+        missingPeriods: windowPeriods,
+      });
+    }
+  }
+
+  return delinquent;
+}

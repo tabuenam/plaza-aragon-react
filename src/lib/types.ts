@@ -1,5 +1,6 @@
 export type SpaceStatus = "available" | "occupied" | "construction";
 export type PaymentStatus = "pending" | "verified" | "rejected";
+export type PaymentType = "rent" | "electricity";
 
 export type Space = {
   id: string;
@@ -8,6 +9,9 @@ export type Space = {
   price: number;
   status: SpaceStatus;
   image_urls: string[];
+  business_name?: string | null;
+  business_description?: string | null;
+  business_image_urls?: string[];
   sort_order: number;
 };
 
@@ -39,6 +43,7 @@ export type Lease = {
 export type Payment = {
   id: string;
   lease_id: string;
+  payment_type: PaymentType;
   amount: number;
   payment_date: string;
   period_month: number;

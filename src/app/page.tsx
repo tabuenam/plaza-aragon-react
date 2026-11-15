@@ -27,6 +27,10 @@ const fallbackSpaces: Space[] = [
     price: 8000,
     status: "occupied",
     image_urls: [],
+    business_name: "Farmacia San José",
+    business_description:
+      "Atención farmacéutica profesional, medicamentos recetados, suplementos y productos de cuidado personal con acceso directo sobre la Avenida el Caliche.",
+    business_image_urls: [],
     sort_order: 1,
   },
   {
@@ -37,6 +41,10 @@ const fallbackSpaces: Space[] = [
     price: 8000,
     status: "occupied",
     image_urls: [],
+    business_name: "Café Olanchito",
+    business_description:
+      "Café de especialidad de altura, repostería artesanal recién horneada y espacio climatizado para reuniones en el corazón de la ciudad.",
+    business_image_urls: [],
     sort_order: 2,
   },
 ];
@@ -74,7 +82,7 @@ const LEASE_STEPS = [
   {
     step: "Paso 03",
     title: "Firma de Contrato",
-    description: "Formalización del contrato de arrendamiento (6 a 12+ meses).",
+    description: "Formalización del contrato de arrendamiento (desde 6 meses).",
   },
   {
     step: "Paso 04",
@@ -288,7 +296,7 @@ export default async function HomePage() {
                   Arrendamiento Flexible
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-piedra">
-                  Contratos claros de 6 a 12+ meses renovables con condiciones transparentes.
+                  Contratos claros desde 6 meses con condiciones transparentes.
                 </p>
               </div>
 
@@ -676,7 +684,7 @@ export default async function HomePage() {
                     Términos de arrendamiento
                   </summary>
                   <p className="mt-1 rounded-xl bg-arena p-2.5 text-[11px] leading-relaxed text-tinta">
-                    Contratos comerciales de 6 a 12+ meses renovables, canon en Lempiras (HNL), depósito de garantía de 1 mes y servicios eléctricos independientes por medidor.
+                    Contratos comerciales desde 6 meses renovables, canon en Lempiras (HNL), depósito de garantía de 1 mes y servicios eléctricos independientes por medidor.
                   </p>
                 </details>
 

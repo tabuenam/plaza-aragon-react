@@ -1,4 +1,4 @@
-import type { Space } from "./types.ts";
+import { formatMoney } from "./format.ts";
 import {
   DEFAULT_PHONE_DIGITS,
   DEFAULT_PHONE_DISPLAY,
@@ -10,8 +10,32 @@ import {
   getAppPhoneNumber,
   getWhatsAppLink,
 } from "./phone.ts";
+import type { Space } from "./types.ts";
 
 export type FilterOption = "all" | "open" | "occupied";
+
+export type SpaceDisplayMeta = {
+  title: string;
+  subtitle: string;
+  fullLabel: string;
+  area: string;
+  description: string;
+};
+
+export type SpaceShareData = {
+  title: string;
+  text: string;
+  url: string;
+  clipboardText: string;
+  instagramUrl: string;
+  whatsappShareUrl: string;
+  facebookShareUrl: string;
+  xShareUrl: string;
+  linkedinShareUrl: string;
+  telegramShareUrl: string;
+  emailShareUrl: string;
+  isFree: boolean;
+};
 
 export {
   DEFAULT_PHONE_DIGITS,
@@ -22,7 +46,7 @@ export {
   getAppPhoneDigits,
   getAppPhoneDisplay,
   getAppPhoneNumber,
-  getWhatsAppLink,
+  getWhatsAppLink
 };
 
 export const OFFICIAL_WHATSAPP_DIGITS = getAppPhoneDigits();
@@ -62,7 +86,7 @@ export const COROZAL_TAGS = [
 export const FAQS = [
   {
     q: "¿Cuál es la duración mínima y máxima de los contratos de arrendamiento?",
-    a: "Ofrecemos contratos flexibles de 6 a 12+ meses renovables, adaptados tanto a negocios consolidados en Olanchito como a nuevos proyectos comerciales, clínicas o sucursales.",
+    a: "Ofrecemos contratos flexibles desde 6 meses renovables, adaptados tanto a negocios consolidados en Olanchito como a nuevos proyectos comerciales, clínicas o sucursales.",
   },
   {
     q: "¿Qué servicios incluye cada local comercial?",
@@ -113,6 +137,111 @@ export function getSpaceCatalogTags(space: Space, index: number): string[] {
     return COROZAL_TAGS;
   }
   return getSpaceHighlights(space, index);
+}
+
+export function getSpaceDisplayMeta(space: Space, index: number): SpaceDisplayMeta {
+  const order = space.sort_order || index + 1;
+  const lower = space.name.toLowerCase();
+
+  if (lower.includes("pacura") || order === 1) {
+    return {
+      title: "Local Pacura",
+      subtitle: "Local 1 - Esquinero",
+      fullLabel: "Local Pacura (Local 1 - Esquinero)",
+      area: "70 m²",
+      description:
+        space.description && space.description.length > 20
+          ? space.description
+          : "Módulo comercial esquinero en planta baja de 70 m² con doble ángulo visual, vitrina panorámica hacia la Avenida el Caliche, baño privado y medidor eléctrico propio.",
+    };
+  }
+
+  if (lower.includes("corozal") || order === 2) {
+    return {
+      title: "Local Corozal",
+      subtitle: "Local 2 - Central Frontal",
+      fullLabel: "Local Corozal (Local 2 - Central Frontal)",
+      area: "70 m²",
+      description:
+        space.description && space.description.length > 20
+          ? space.description
+          : "Módulo comercial central frontal de 70 m² en planta baja con acceso directo a pie de calle, vitrina panorámica de vidrio templado, porcelanato y A/C instalado.",
+    };
+  }
+
+  const cleanName = space.name.trim() || `Local ${order}`;
+  const cleanDescription =
+    space.description && space.description.trim().length > 0
+      ? space.description
+      : "Módulo comercial en planta baja de 70 m² con vitrina panorámica, baño privado y medidor eléctrico independiente.";
+
+  return {
+    title: cleanName,
+    subtitle: `Local ${order} - Planta Baja`,
+    fullLabel: `${cleanName} (Local ${order})`,
+    area: "70 m²",
+    description: cleanDescription,
+  };
+}
+
+export function isSpaceFree(space: Space): boolean {
+  return space.status === "available" || space.status === "construction";
+}
+
+export function hasSpaceBusinessShowcase(space: Space): boolean {
+  if (space.status !== "occupied") return false;
+  const hasName = Boolean(space.business_name?.trim());
+  const hasDescription = Boolean(space.business_description?.trim());
+  const hasImages =
+    Array.isArray(space.business_image_urls) &&
+    space.business_image_urls.some((url) => Boolean(url?.trim()));
+  return hasName || hasDescription || hasImages;
+}
+
+export function buildSpaceShareData(
+  space: Space,
+  index: number,
+  baseUrl = "https://plaza-aragon.com"
+): SpaceShareData {
+  const cleanBase =
+    (baseUrl || "https://plaza-aragon.com").trim().replace(/\/+$/, "") ||
+    "https://plaza-aragon.com";
+  const meta = getSpaceDisplayMeta(space, index);
+  const isFree = isSpaceFree(space);
+  const priceLabel =
+    Number.isFinite(space.price) && space.price > 0
+      ? formatMoney(space.price)
+      : "L 8,000";
+  const url = `${cleanBase}/#local-card-${space.id}`;
+
+  let title: string;
+  let text: string;
+
+  if (space.status === "available") {
+    title = `${meta.title} disponible en Plaza Aragón • Olanchito`;
+    text = `Local comercial disponible en Plaza Aragón (Olanchito): ${meta.title} (${meta.area}) • Cuota mensual ${priceLabel}/mes. Vitrina panorámica, baño privado y medidor propio.`;
+  } else if (space.status === "construction") {
+    title = `${meta.title} en preventa • Plaza Aragón, Olanchito`;
+    text = `Módulo comercial en preventa en Plaza Aragón (Olanchito): ${meta.title} (${meta.area}) • Cuota mensual ${priceLabel}/mes.`;
+  } else {
+    title = `${meta.title} • Plaza Aragón, Olanchito`;
+    text = `Conoce ${meta.title} (${meta.area}) en Plaza Aragón, Olanchito • Cuota mensual ${priceLabel}/mes.`;
+  }
+
+  return {
+    title,
+    text,
+    url,
+    clipboardText: `${text}\n${url}`,
+    instagramUrl: "https://www.instagram.com/",
+    whatsappShareUrl: `https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${url}`)}`,
+    facebookShareUrl: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`,
+    xShareUrl: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+    linkedinShareUrl: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+    telegramShareUrl: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+    emailShareUrl: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n\n${url}`)}`,
+    isFree,
+  };
 }
 
 export function filterSpaces(spaces: Space[], filter: FilterOption): Space[] {

@@ -7,6 +7,7 @@ import {
   formatDate,
   formatMoney,
   formatPeriod,
+  getElectricityDelinquentLeases,
   groupPaymentsByYear,
   MONTHS,
   parsePeriodKey,
@@ -131,6 +132,118 @@ describe("format utilities", () => {
       assert.equal(parsePeriodKey("2026-13"), null);
       assert.equal(parsePeriodKey("2026-4"), null);
       assert.equal(parsePeriodKey("invalid-key"), null);
+    });
+  });
+
+  describe("Electricity 3-month delinquency helper", () => {
+    const sampleLeases = [
+      {
+        id: "lease-delinquent",
+        start_date: "2026-01-01",
+        space: { id: "space-1", name: "Local 1" },
+        tenant: { id: "tenant-1", name: "Farmacia San José", contact_info: "+504 9988-7766" },
+      },
+      {
+        id: "lease-current",
+        start_date: "2026-01-01",
+        space: { id: "space-2", name: "Local 2" },
+        tenant: { id: "tenant-2", name: "Café Olanchito", contact_info: "+504 9955-4433" },
+      },
+      {
+        id: "lease-new",
+        start_date: "2026-10-01",
+        space: { id: "space-3", name: "Local 3" },
+        tenant: { id: "tenant-3", name: "Óptica Central", contact_info: "" },
+      },
+    ];
+
+    it("flags active leases started >= 3 months ago with no verified/pending electricity receipt in the last 3 months", () => {
+      const payments = [
+        {
+          lease_id: "lease-delinquent",
+          payment_type: "rent",
+          period_month: 11,
+          period_year: 2026,
+          status: "verified",
+        },
+        {
+          lease_id: "lease-delinquent",
+          payment_type: "electricity",
+          period_month: 10,
+          period_year: 2026,
+          status: "rejected",
+        },
+        {
+          lease_id: "lease-delinquent",
+          payment_type: "electricity",
+          period_month: 8,
+          period_year: 2026,
+          status: "verified",
+        },
+        {
+          lease_id: "lease-current",
+          payment_type: "electricity",
+          period_month: 9,
+          period_year: 2026,
+          status: "pending",
+        },
+      ];
+
+      const result = getElectricityDelinquentLeases(sampleLeases, payments, { month: 11, year: 2026 });
+      assert.equal(result.length, 1);
+      assert.equal(result[0].leaseId, "lease-delinquent");
+      assert.equal(result[0].spaceName, "Local 1");
+      assert.equal(result[0].tenantName, "Farmacia San José");
+      assert.deepEqual(result[0].missingPeriods, [
+        { month: 9, year: 2026 },
+        { month: 10, year: 2026 },
+        { month: 11, year: 2026 },
+      ]);
+    });
+
+    it("does not flag a lease if at least one receipt in the 3-month window is verified or pending", () => {
+      const payments = [
+        {
+          lease_id: "lease-delinquent",
+          payment_type: "electricity",
+          period_month: 11,
+          period_year: 2026,
+          status: "verified",
+        },
+        {
+          lease_id: "lease-current",
+          payment_type: "electricity",
+          period_month: 10,
+          period_year: 2026,
+          status: "pending",
+        },
+      ];
+
+      const result = getElectricityDelinquentLeases(sampleLeases, payments, { month: 11, year: 2026 });
+      assert.equal(result.length, 0);
+    });
+
+    it("handles year-boundary 3-month windows accurately", () => {
+      const result = getElectricityDelinquentLeases(
+        [sampleLeases[0]],
+        [
+          {
+            lease_id: "lease-delinquent",
+            payment_type: "electricity",
+            period_month: 10,
+            period_year: 2026,
+            status: "verified",
+          },
+        ],
+        { month: 1, year: 2027 }
+      );
+
+      assert.equal(result.length, 1);
+      assert.deepEqual(result[0].missingPeriods, [
+        { month: 11, year: 2026 },
+        { month: 12, year: 2026 },
+        { month: 1, year: 2027 },
+      ]);
     });
   });
 });

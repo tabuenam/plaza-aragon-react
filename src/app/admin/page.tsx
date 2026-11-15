@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { getAdminPayments, getAllSpacesWithActiveLease } from "@/lib/data";
-import { currentPeriod, formatMoney, formatPeriod } from "@/lib/format";
+import { getActiveLeases, getAdminPayments, getAllSpacesWithActiveLease } from "@/lib/data";
+import {
+  currentPeriod,
+  formatMoney,
+  formatPeriod,
+  getElectricityDelinquentLeases,
+} from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { PaymentReviewCard } from "@/app/admin/pagos/payment-review-card";
 import { SpaceStatusForm } from "@/app/admin/space-status-form";
@@ -19,18 +24,29 @@ export default async function AdminOverviewPage() {
   await requireAdmin();
 
   const cur = currentPeriod();
-  const [spaces, currentMonthPayments] = await Promise.all([
+  const [spaces, allPayments, activeLeases] = await Promise.all([
     getAllSpacesWithActiveLease(),
-    getAdminPayments(cur.year, cur.month),
+    getAdminPayments(),
+    getActiveLeases(),
   ]);
 
   const occupiedCount = spaces.filter((s) => s.status === "occupied").length;
   const constructionCount = spaces.filter((s) => s.status === "construction").length;
   const availableCount = spaces.filter((s) => s.status === "available").length;
 
+  const currentMonthPayments = allPayments.filter(
+    (p) => p.period_year === cur.year && p.period_month === cur.month
+  );
+  const currentMonthRentPayments = currentMonthPayments.filter(
+    (p) => (p.payment_type ?? "rent") === "rent"
+  );
+
   const pendingPayments = currentMonthPayments.filter((p) => p.status === "pending");
-  const verifiedPayments = currentMonthPayments.filter((p) => p.status === "verified");
-  const verifiedAmount = verifiedPayments.reduce((acc, p) => acc + Number(p.amount), 0);
+  const pendingRentCount = pendingPayments.filter((p) => (p.payment_type ?? "rent") === "rent").length;
+  const pendingElectricityCount = pendingPayments.filter((p) => p.payment_type === "electricity").length;
+
+  const verifiedRentPayments = currentMonthRentPayments.filter((p) => p.status === "verified");
+  const verifiedAmount = verifiedRentPayments.reduce((acc, p) => acc + Number(p.amount), 0);
 
   const expectedMonthlyRent = spaces.reduce(
     (acc, s) => acc + (s.current_lease ? Number(s.current_lease.monthly_rent) : 0),
@@ -38,6 +54,8 @@ export default async function AdminOverviewPage() {
   );
   const collectionPercent =
     expectedMonthlyRent > 0 ? Math.min(100, Math.round((verifiedAmount / expectedMonthlyRent) * 100)) : 0;
+
+  const delinquentElectricity = getElectricityDelinquentLeases(activeLeases, allPayments, cur);
 
   return (
     <div className="space-y-8">
@@ -111,14 +129,16 @@ export default async function AdminOverviewPage() {
           <p className="mt-3 border-t border-crema/70 pt-2.5 text-xs text-piedra">
             {pendingPayments.length === 0
               ? "✓ Todos los recibos al día"
-              : "Transferencias esperando validación"}
+              : `${pendingRentCount} renta · ${pendingElectricityCount} energía eléctrica`}
           </p>
         </div>
 
         <div className="card flex flex-col justify-between bg-white p-5">
           <div>
             <div className="flex items-center justify-between">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-piedra">Recaudado ({formatPeriod(cur)})</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-piedra">
+                Recaudado Renta ({formatPeriod(cur)})
+              </p>
               <span className="font-mono text-[11px] font-bold text-selva">{collectionPercent}%</span>
             </div>
             <p className="mt-2 font-display text-xl font-bold tabular-nums text-azul sm:text-2xl">
@@ -136,6 +156,66 @@ export default async function AdminOverviewPage() {
           </p>
         </div>
       </section>
+
+      {delinquentElectricity.length > 0 && (
+        <section
+          role="alert"
+          aria-labelledby="alerta-electricidad-admin"
+          className="card border-2 border-barro bg-barro-claro/30 space-y-4"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-barro">
+                <span className="h-2 w-2 rounded-full bg-barro animate-pulse" />
+                Notificación de Servicio Eléctrico · 3 Meses Sin Comprobante
+              </span>
+              <h2 id="alerta-electricidad-admin" className="mt-0.5 font-display text-lg font-bold text-tinta">
+                {delinquentElectricity.length}{" "}
+                {delinquentElectricity.length === 1
+                  ? "inquilino debe registrar pago de energía eléctrica"
+                  : "inquilinos deben registrar pago de energía eléctrica"}
+              </h2>
+              <p className="text-xs text-piedra">
+                Arrendatarios activos que no han subido recibos de electricidad en los últimos 3 meses.
+              </p>
+            </div>
+            <Link
+              href="/admin/pagos?tipo=electricity"
+              className="btn-accent min-h-11 shrink-0 px-4 py-2 text-xs self-start sm:self-auto"
+            >
+              Ver Energía Eléctrica →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {delinquentElectricity.map((item) => (
+              <div
+                key={item.leaseId}
+                className="flex flex-col justify-between gap-2 rounded-2xl border border-barro/25 bg-white p-4 shadow-2xs"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-display text-base font-bold text-azul">{item.spaceName}</p>
+                    <p className="text-sm font-semibold text-tinta">{item.tenantName}</p>
+                    {item.tenantContact && (
+                      <p className="text-xs text-piedra">Contacto: {item.tenantContact}</p>
+                    )}
+                  </div>
+                  <span className="rounded-full bg-barro-claro px-2.5 py-0.5 text-[10px] font-bold text-barro uppercase">
+                    Sin recibos (3 meses)
+                  </span>
+                </div>
+                <p className="border-t border-crema/70 pt-2 text-xs text-piedra">
+                  Períodos sin carga:{" "}
+                  <strong className="text-barro">
+                    {item.missingPeriods.map((p) => formatPeriod(p)).join(" · ")}
+                  </strong>
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {pendingPayments.length > 0 && (
         <section className="card border-2 border-maiz bg-maiz-claro/25 space-y-4">

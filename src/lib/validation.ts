@@ -1,9 +1,51 @@
-import type { FormState, SpaceStatus } from "./types.ts";
+import type { FormState, PaymentType, SpaceStatus } from "./types.ts";
 
 const VALID_SPACE_STATUSES: readonly SpaceStatus[] = ["available", "occupied", "construction"];
+const VALID_PAYMENT_TYPES: readonly PaymentType[] = ["rent", "electricity"];
+
+export const MAX_BUSINESS_NAME_LENGTH = 80;
+export const MAX_BUSINESS_DESCRIPTION_LENGTH = 350;
+export const MAX_SPACE_IMAGE_BYTES = 4 * 1024 * 1024;
 
 export function isValidSpaceStatus(status: string): status is SpaceStatus {
   return (VALID_SPACE_STATUSES as readonly string[]).includes(status);
+}
+
+export function isValidPaymentType(type: string): type is PaymentType {
+  return (VALID_PAYMENT_TYPES as readonly string[]).includes(type);
+}
+
+export function validateSpaceBusinessShowcaseInput(input: {
+  businessName?: string | null;
+  businessDescription?: string | null;
+  imageByteSizes?: readonly number[];
+}): FormState | null {
+  const businessName = (input.businessName ?? "").trim();
+  const businessDescription = (input.businessDescription ?? "").trim();
+
+  if (businessName.length > MAX_BUSINESS_NAME_LENGTH) {
+    return {
+      ok: false,
+      message: `El nombre del negocio no puede exceder ${MAX_BUSINESS_NAME_LENGTH} caracteres.`,
+    };
+  }
+  if (businessDescription.length > MAX_BUSINESS_DESCRIPTION_LENGTH) {
+    return {
+      ok: false,
+      message: `La descripción breve del negocio no puede exceder ${MAX_BUSINESS_DESCRIPTION_LENGTH} caracteres.`,
+    };
+  }
+  if (
+    input.imageByteSizes?.some(
+      (size) => !Number.isFinite(size) || size < 0 || size > MAX_SPACE_IMAGE_BYTES
+    )
+  ) {
+    return {
+      ok: false,
+      message: "Cada fotografía del negocio debe pesar menos de 4 MB.",
+    };
+  }
+  return null;
 }
 
 export function validateSpaceUpdateInput(input: {
@@ -11,6 +53,9 @@ export function validateSpaceUpdateInput(input: {
   name: string;
   status: string;
   price: number;
+  businessName?: string | null;
+  businessDescription?: string | null;
+  businessImageByteSizes?: readonly number[];
 }): FormState | null {
   if (!input.spaceId || !input.name.trim()) {
     return { ok: false, message: "El nombre del local es obligatorio." };
@@ -21,7 +66,11 @@ export function validateSpaceUpdateInput(input: {
   if (Number.isNaN(input.price) || input.price < 0) {
     return { ok: false, message: "El precio mensual debe ser un número mayor o igual a 0." };
   }
-  return null;
+  return validateSpaceBusinessShowcaseInput({
+    businessName: input.businessName,
+    businessDescription: input.businessDescription,
+    imageByteSizes: input.businessImageByteSizes,
+  });
 }
 
 export function validateLeaseInput(input: {
@@ -48,7 +97,11 @@ export function validatePaymentInput(input: {
   periodYear: number;
   amount: number;
   hasFile: boolean;
+  paymentType?: string;
 }): FormState | null {
+  if (input.paymentType !== undefined && !isValidPaymentType(input.paymentType)) {
+    return { ok: false, message: "Seleccione un tipo de comprobante válido." };
+  }
   if (!Number.isInteger(input.periodMonth) || input.periodMonth < 1 || input.periodMonth > 12) {
     return { ok: false, message: "Seleccione un mes válido." };
   }
@@ -59,7 +112,7 @@ export function validatePaymentInput(input: {
     return { ok: false, message: "Ingrese un monto válido." };
   }
   if (!input.hasFile) {
-    return { ok: false, message: "Debe adjuntar el comprobante de transferencia bancaria." };
+    return { ok: false, message: "Debe adjuntar el comprobante de pago." };
   }
   return null;
 }
@@ -70,6 +123,7 @@ export function validateAdminPaymentInput(input: {
   periodYear: number;
   amount: number;
   hasFile: boolean;
+  paymentType?: string;
 }): FormState | null {
   if (!input.leaseId.trim()) {
     return { ok: false, message: "Seleccione un local con contrato activo." };

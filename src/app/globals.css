@@ -171,5 +171,61 @@
   .eyebrow {
     @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-barro;
   }
+
+  .flip-card-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  .flip-card-face {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  .flip-card-face[inert],
+  .flip-card-face[inert] * {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .flip-card-scene {
+      perspective: 1200px;
+    }
+
+    .flip-card-inner {
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .flip-card-inner[data-flipped="true"] {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-face {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .flip-card-face-front {
+      transform: rotateY(0deg);
+    }
+
+    .flip-card-face-back {
+      transform: rotateY(180deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flip-card-face {
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .flip-card-face[inert] {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
 }
 

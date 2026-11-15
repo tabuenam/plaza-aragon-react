@@ -5,6 +5,9 @@ create table public.spaces (
   price numeric(10, 2) not null default 0 check (price >= 0),
   status text not null default 'available' check (status in ('available', 'occupied', 'construction')),
   image_urls text[] not null default '{}',
+  business_name text check (business_name is null or char_length(business_name) <= 80),
+  business_description text check (business_description is null or char_length(business_description) <= 350),
+  business_image_urls text[] not null default '{}',
   sort_order int not null default 0,
   created_at timestamptz not null default now()
 );
@@ -35,6 +38,7 @@ create index leases_tenant_id_idx on public.leases (tenant_id);
 create table public.payments (
   id uuid primary key default gen_random_uuid(),
   lease_id uuid not null references public.leases (id) on delete cascade,
+  payment_type text not null default 'rent' check (payment_type in ('rent', 'electricity')),
   amount numeric(10, 2) not null check (amount > 0),
   payment_date date not null default current_date,
   period_month int not null check (period_month between 1 and 12),
@@ -46,8 +50,9 @@ create table public.payments (
   created_at timestamptz not null default now()
 );
 
-create unique index payments_one_per_period on public.payments (lease_id, period_year, period_month) where status <> 'rejected';
+create unique index payments_one_per_period on public.payments (lease_id, payment_type, period_year, period_month) where status <> 'rejected';
 create index payments_period_idx on public.payments (period_year, period_month);
+create index payments_type_period_idx on public.payments (payment_type, period_year, period_month);
 
 create or replace function public.is_admin()
 returns boolean
