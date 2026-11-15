@@ -32,6 +32,11 @@ const NAV_ITEMS: NavItem[] = [
     label: "Historial Contable",
     breadcrumbTitle: "Historial Contable",
   },
+  {
+    href: "/admin/rentabilidad",
+    label: "Rentabilidad y Gastos",
+    breadcrumbTitle: "Rentabilidad y Gastos",
+  },
 ];
 
 function isTabActive(pathname: string, item: NavItem) {

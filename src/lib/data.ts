@@ -2,7 +2,21 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabasePublicClient } from "@/lib/supabase/static";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
-import type { AdminLease, AdminTenant, LeaseWithRelations, Payment, PaymentType, Space, Tenant } from "@/lib/types";
+import { calculateModuleProfitability, calculatePlazaSummary } from "@/lib/profitability";
+import type {
+  AdminLease,
+  AdminTenant,
+  Lease,
+  LeaseWithRelations,
+  ModuleExpense,
+  ModuleFinancing,
+  ModuleProfitabilityMetrics,
+  Payment,
+  PaymentType,
+  PlazaProfitabilitySummary,
+  Space,
+  Tenant,
+} from "@/lib/types";
 
 export async function getPublicSpaces(): Promise<Space[]> {
   "use cache";
@@ -280,4 +294,124 @@ export async function getAllSpaces(): Promise<Space[]> {
 
   if (error || !data) return [];
   return data as Space[];
+}
+
+export async function getModuleExpenses(spaceId?: string): Promise<ModuleExpense[]> {
+  await requireAdmin();
+  const supabase = await createSupabaseServerClient();
+  let query = supabase
+    .from("module_expenses")
+    .select("*")
+    .order("expense_date", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (spaceId) {
+    query = query.eq("space_id", spaceId);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  const expenses = (data as ModuleExpense[]).map((e) => ({
+    ...e,
+    amount: Number(e.amount),
+  }));
+
+  const paths = expenses.map((e) => e.receipt_path).filter((p): p is string => Boolean(p));
+  if (paths.length > 0) {
+    const { data: signedUrls } = await supabase.storage.from("expenses").createSignedUrls(paths, 3600);
+    if (signedUrls) {
+      const urlMap = new Map<string, string>();
+      for (const item of signedUrls) {
+        if (item.path && item.signedUrl) {
+          urlMap.set(item.path, item.signedUrl);
+        }
+      }
+      for (const exp of expenses) {
+        if (exp.receipt_path) {
+          exp.signed_receipt_url = urlMap.get(exp.receipt_path) ?? undefined;
+        }
+      }
+    }
+  }
+
+  return expenses;
+}
+
+export async function getModuleProfitabilityOverview(): Promise<{
+  summary: PlazaProfitabilitySummary;
+  modules: ModuleProfitabilityMetrics[];
+}> {
+  await requireAdmin();
+  const supabase = await createSupabaseServerClient();
+
+  const [
+    { data: spacesData },
+    { data: leasesData },
+    { data: paymentsData },
+    expenses,
+    { data: financingData },
+  ] = await Promise.all([
+    supabase.from("spaces").select("*").order("sort_order", { ascending: true }),
+    supabase.from("leases").select("id, space_id, start_date, end_date, monthly_rent, active"),
+    supabase
+      .from("payments")
+      .select("lease_id, payment_type, amount, period_year, status")
+      .eq("status", "verified")
+      .eq("payment_type", "rent"),
+    getModuleExpenses(),
+    supabase.from("module_financing").select("*"),
+  ]);
+
+  const spaces = (spacesData ?? []) as Space[];
+  const leases = (leasesData ?? []) as Pick<
+    Lease,
+    "id" | "space_id" | "start_date" | "end_date" | "monthly_rent" | "active"
+  >[];
+  const payments = (paymentsData ?? []) as Pick<
+    Payment,
+    "lease_id" | "payment_type" | "amount" | "period_year" | "status"
+  >[];
+  const financingList = ((financingData ?? []) as ModuleFinancing[]).map((f) => ({
+    ...f,
+    loan_amount: Number(f.loan_amount ?? 0),
+    annual_interest_rate: Number(f.annual_interest_rate ?? 0),
+    term_months: Number(f.term_months ?? 0),
+    down_payment:
+      f.down_payment !== null && f.down_payment !== undefined ? Number(f.down_payment) : null,
+    monthly_operating_expense: Number(f.monthly_operating_expense ?? 0),
+    vacancy_rate_pct: Number(f.vacancy_rate_pct ?? 0),
+  }));
+
+  const financingBySpace = new Map<string, ModuleFinancing>();
+  for (const f of financingList) {
+    financingBySpace.set(f.space_id, f);
+  }
+
+  const expensesBySpace = new Map<string, ModuleExpense[]>();
+  for (const exp of expenses) {
+    const list = expensesBySpace.get(exp.space_id) ?? [];
+    list.push(exp);
+    expensesBySpace.set(exp.space_id, list);
+  }
+
+  const leasesBySpace = new Map<string, typeof leases>();
+  for (const lease of leases) {
+    const list = leasesBySpace.get(lease.space_id) ?? [];
+    list.push(lease);
+    leasesBySpace.set(lease.space_id, list);
+  }
+
+  const modules = spaces.map((space) =>
+    calculateModuleProfitability({
+      space,
+      leases: leasesBySpace.get(space.id) ?? [],
+      payments,
+      expenses: expensesBySpace.get(space.id) ?? [],
+      financing: financingBySpace.get(space.id) ?? null,
+    })
+  );
+
+  const summary = calculatePlazaSummary(modules);
+  return { summary, modules };
 }

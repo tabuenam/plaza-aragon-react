@@ -54,6 +54,31 @@ create unique index payments_one_per_period on public.payments (lease_id, paymen
 create index payments_period_idx on public.payments (period_year, period_month);
 create index payments_type_period_idx on public.payments (payment_type, period_year, period_month);
 
+create table public.module_expenses (
+  id uuid primary key default gen_random_uuid(),
+  space_id uuid not null references public.spaces (id) on delete cascade,
+  category text not null check (category in ('construction', 'operating')),
+  amount numeric(12, 2) not null check (amount > 0),
+  expense_date date not null default current_date,
+  reason text not null check (char_length(trim(reason)) > 0),
+  receipt_path text,
+  created_at timestamptz not null default now()
+);
+
+create index module_expenses_space_date_idx on public.module_expenses (space_id, expense_date desc);
+
+create table public.module_financing (
+  space_id uuid primary key references public.spaces (id) on delete cascade,
+  financing_mode text not null default 'cash' check (financing_mode in ('cash', 'financed')),
+  loan_amount numeric(12, 2) not null default 0 check (loan_amount >= 0),
+  annual_interest_rate numeric(6, 4) not null default 0 check (annual_interest_rate >= 0),
+  term_months int not null default 0 check (term_months >= 0),
+  down_payment numeric(12, 2) check (down_payment is null or down_payment >= 0),
+  monthly_operating_expense numeric(12, 2) not null default 0 check (monthly_operating_expense >= 0),
+  vacancy_rate_pct numeric(5, 2) not null default 0 check (vacancy_rate_pct >= 0 and vacancy_rate_pct <= 100),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -67,10 +92,12 @@ alter table public.spaces enable row level security;
 alter table public.tenants enable row level security;
 alter table public.leases enable row level security;
 alter table public.payments enable row level security;
+alter table public.module_expenses enable row level security;
+alter table public.module_financing enable row level security;
 
 grant select on public.spaces to anon, authenticated;
 grant insert, update, delete on public.spaces to authenticated;
-grant select, insert, update, delete on public.tenants, public.leases, public.payments to authenticated;
+grant select, insert, update, delete on public.tenants, public.leases, public.payments, public.module_expenses, public.module_financing to authenticated;
 
 create policy "spaces_select_all" on public.spaces
   for select to anon, authenticated using (true);
@@ -114,11 +141,18 @@ create policy "payments_tenant_insert" on public.payments
 create policy "payments_admin_write" on public.payments
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
+create policy "module_expenses_admin_all" on public.module_expenses
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+create policy "module_financing_admin_all" on public.module_financing
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
   ('receipts', 'receipts', false, 10485760, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']),
   ('spaces', 'spaces', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
-  ('contracts', 'contracts', false, 20971520, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'])
+  ('contracts', 'contracts', false, 20971520, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']),
+  ('expenses', 'expenses', false, 10485760, array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'])
 on conflict (id) do nothing;
 
 create policy "receipts_tenant_insert" on storage.objects
@@ -153,3 +187,7 @@ create policy "contracts_tenant_select" on storage.objects
         and (storage.foldername(name))[1] = l.id::text
     )
   );
+
+create policy "expenses_admin_all" on storage.objects
+  for all to authenticated using (bucket_id = 'expenses' and public.is_admin())
+  with check (bucket_id = 'expenses' and public.is_admin());

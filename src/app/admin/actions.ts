@@ -8,7 +8,9 @@ import {
   isValidSpaceStatus,
   sanitizeStorageFileName,
   validateAdminPaymentInput,
+  validateExpenseInput,
   validateLeaseInput,
+  validateModuleFinancingInput,
   validateSpaceUpdateInput,
 } from "@/lib/validation";
 
@@ -816,5 +818,210 @@ export async function deleteLeaseAction(_prevState: FormState, formData: FormDat
 
   revalidateLeaseViews();
   return { ok: true, message: "Contrato eliminado exitosamente." };
+}
+
+export async function createModuleExpenseAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const spaceId = String(formData.get("space_id") ?? "").trim();
+  const category = String(formData.get("category") ?? "").trim();
+  const amount = Number(formData.get("amount"));
+  const expenseDate = String(formData.get("expense_date") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+  const receiptEntry = formData.get("receipt");
+  const receiptFile =
+    receiptEntry instanceof File && receiptEntry.size > 0 ? receiptEntry : null;
+
+  const validationError = validateExpenseInput({
+    spaceId,
+    category,
+    amount,
+    expenseDate,
+    reason,
+    receiptByteSize: receiptFile ? receiptFile.size : null,
+  });
+  if (validationError) return validationError;
+
+  const supabase = user.supabase;
+  const { data: space } = await supabase
+    .from("spaces")
+    .select("id")
+    .eq("id", spaceId)
+    .maybeSingle();
+
+  if (!space) {
+    return { ok: false, message: "El módulo seleccionado no fue encontrado." };
+  }
+
+  let uploadedPath: string | null = null;
+  const adminClient = createSupabaseAdminClient();
+
+  if (receiptFile) {
+    const { ext: safeExt } = sanitizeStorageFileName(receiptFile.name, [
+      "jpg",
+      "jpeg",
+      "png",
+      "webp",
+      "pdf",
+      "heic",
+      "heif",
+    ]);
+    uploadedPath = `${spaceId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
+    const fileBuffer = Buffer.from(await receiptFile.arrayBuffer());
+    const contentType = receiptFile.type || (safeExt === "pdf" ? "application/pdf" : "image/jpeg");
+
+    const { error: uploadError } = await supabase.storage.from("expenses").upload(uploadedPath, fileBuffer, {
+      contentType,
+      upsert: false,
+    });
+
+    if (uploadError) {
+      const { error: adminUploadError } = await adminClient.storage
+        .from("expenses")
+        .upload(uploadedPath, fileBuffer, {
+          contentType,
+          upsert: false,
+        });
+      if (adminUploadError) {
+        return {
+          ok: false,
+          message: "No se pudo subir el comprobante del gasto. Intente de nuevo.",
+        };
+      }
+    }
+  }
+
+  const { error: insertError } = await supabase.from("module_expenses").insert({
+    space_id: spaceId,
+    category,
+    amount,
+    expense_date: expenseDate,
+    reason,
+    receipt_path: uploadedPath,
+  });
+
+  if (insertError) {
+    if (uploadedPath) {
+      await adminClient.storage.from("expenses").remove([uploadedPath]);
+    }
+    return {
+      ok: false,
+      message: "Error al guardar el gasto en el sistema. Intente de nuevo.",
+    };
+  }
+
+  revalidatePath("/admin/rentabilidad");
+  revalidatePath("/admin");
+
+  return {
+    ok: true,
+    message:
+      category === "construction"
+        ? "Inversión / costo de construcción registrado exitosamente."
+        : "Gasto operativo registrado exitosamente.",
+  };
+}
+
+export async function deleteModuleExpenseAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const expenseId = String(formData.get("expense_id") ?? "").trim();
+
+  if (!expenseId) {
+    return { ok: false, message: "Identificador de gasto no válido." };
+  }
+
+  const supabase = user.supabase;
+  const { data: expense } = await supabase
+    .from("module_expenses")
+    .select("id, receipt_path")
+    .eq("id", expenseId)
+    .maybeSingle();
+
+  if (!expense) {
+    return { ok: false, message: "El gasto no fue encontrado." };
+  }
+
+  const { error } = await supabase.from("module_expenses").delete().eq("id", expenseId);
+  if (error) {
+    return { ok: false, message: "Error al eliminar el gasto." };
+  }
+
+  if (expense.receipt_path) {
+    const adminClient = createSupabaseAdminClient();
+    await adminClient.storage.from("expenses").remove([expense.receipt_path as string]);
+  }
+
+  revalidatePath("/admin/rentabilidad");
+  revalidatePath("/admin");
+
+  return { ok: true, message: "Gasto eliminado correctamente." };
+}
+
+export async function upsertModuleFinancingAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAdmin();
+  const spaceId = String(formData.get("space_id") ?? "").trim();
+  const financingMode = String(formData.get("financing_mode") ?? "cash").trim();
+  const loanAmount = financingMode === "financed" ? Number(formData.get("loan_amount")) : 0;
+  const annualInterestRate = financingMode === "financed" ? Number(formData.get("annual_interest_rate")) : 0;
+  const termMonths = financingMode === "financed" ? Number(formData.get("term_months")) : 0;
+  const rawDownPayment = String(formData.get("down_payment") ?? "").trim();
+  const downPayment =
+    financingMode === "financed" && rawDownPayment !== "" ? Number(rawDownPayment) : null;
+  const rawMonthlyOpEx = String(formData.get("monthly_operating_expense") ?? "").trim();
+  const monthlyOperatingExpense = rawMonthlyOpEx === "" ? 0 : Number(rawMonthlyOpEx);
+  const rawVacancyRate = String(formData.get("vacancy_rate_pct") ?? "").trim();
+  const vacancyRatePct = rawVacancyRate === "" ? 0 : Number(rawVacancyRate);
+
+  const validationError = validateModuleFinancingInput({
+    spaceId,
+    financingMode,
+    loanAmount,
+    annualInterestRate,
+    termMonths,
+    downPayment,
+    monthlyOperatingExpense,
+    vacancyRatePct,
+  });
+  if (validationError) return validationError;
+
+  const supabase = user.supabase;
+  const { data: space } = await supabase
+    .from("spaces")
+    .select("id")
+    .eq("id", spaceId)
+    .maybeSingle();
+
+  if (!space) {
+    return { ok: false, message: "El módulo seleccionado no fue encontrado." };
+  }
+
+  const { error } = await supabase.from("module_financing").upsert(
+    {
+      space_id: spaceId,
+      financing_mode: financingMode,
+      loan_amount: loanAmount,
+      annual_interest_rate: annualInterestRate,
+      term_months: termMonths,
+      down_payment: downPayment,
+      monthly_operating_expense: monthlyOperatingExpense,
+      vacancy_rate_pct: vacancyRatePct,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "space_id" }
+  );
+
+  if (error) {
+    return { ok: false, message: "Error al guardar la configuración financiera y operativa." };
+  }
+
+  revalidatePath("/admin/rentabilidad");
+  revalidatePath("/admin");
+
+  return {
+    ok: true,
+    message:
+      financingMode === "financed"
+        ? "Configuración financiera y operativa (préstamo) guardada correctamente."
+        : "Configuración financiera y operativa (contado) guardada correctamente.",
+  };
 }
 
