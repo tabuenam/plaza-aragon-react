@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { PaymentForm } from "@/app/portal/payment-form";
 import { PaymentHistory } from "@/app/portal/payment-history";
 import { ContractAttachmentsView } from "@/components/contract-attachments-view";
@@ -13,15 +14,76 @@ import {
   getElectricityDelinquentLeases,
 } from "@/lib/format";
 import type { Metadata } from "next";
-import { connection } from "next/server";
 
 export const metadata: Metadata = {
   title: "Mi Portal",
   description: "Gestión de pagos y contrato de arrendamiento en Plaza Aragón.",
 };
 
-export default async function TenantPortalPage() {
-  await connection();
+function TenantPortalSkeleton() {
+  return (
+    <div
+      className="space-y-6 sm:space-y-8 animate-pulse"
+      aria-busy="true"
+      aria-label="Cargando portal de inquilino…"
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-2">
+          <div className="h-3.5 w-48 rounded bg-crema/70" />
+          <div className="h-8 w-56 rounded-lg bg-crema/80" />
+          <div className="h-4 w-80 max-w-full rounded bg-crema/60" />
+        </div>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-3 rounded-2xl border border-crema bg-white px-4 py-3 shadow-2xs"
+            >
+              <div className="space-y-1.5">
+                <div className="h-3 w-24 rounded bg-crema/70" />
+                <div className="h-4 w-28 rounded bg-crema/80" />
+              </div>
+              <div className="h-6 w-20 rounded-full bg-arena" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="card space-y-4 lg:col-span-5">
+          <div className="h-6 w-44 rounded bg-crema/80" />
+          <div className="h-24 rounded-2xl bg-arena/60" />
+          <div className="space-y-3">
+            <div className="h-10 rounded-xl bg-crema/60" />
+            <div className="h-10 rounded-xl bg-crema/60" />
+            <div className="h-11 rounded-xl bg-crema/80" />
+          </div>
+        </div>
+        <div className="card space-y-4 lg:col-span-7">
+          <div className="flex items-center justify-between">
+            <div className="h-6 w-48 rounded bg-crema/80" />
+            <div className="h-8 w-28 rounded-xl bg-arena" />
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-16 rounded-2xl border border-crema bg-arena/40" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function TenantPortalPage() {
+  return (
+    <Suspense fallback={<TenantPortalSkeleton />}>
+      <TenantPortalContent />
+    </Suspense>
+  );
+}
+
+async function TenantPortalContent() {
   const user = await requireTenant();
   const lease = await getTenantLeaseWithSpace(user.id);
 

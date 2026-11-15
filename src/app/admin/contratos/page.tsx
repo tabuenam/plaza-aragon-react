@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { connection } from "next/server";
+import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth";
 import { getAdminTenants, getAllLeases, getAllSpaces } from "@/lib/data";
 import { daysUntil, formatDate, formatMoney } from "@/lib/format";
@@ -36,8 +36,58 @@ function CellLabel({ children }: { children: string }) {
   return <span className="shrink-0 text-xs font-semibold uppercase text-piedra md:hidden">{children}</span>;
 }
 
-export default async function AdminContratosPage(props: { searchParams: SearchParams }) {
-  await connection();
+function AdminContratosSkeleton() {
+  return (
+    <div
+      className="space-y-8 animate-pulse"
+      aria-busy="true"
+      aria-label="Cargando contratos e inquilinos…"
+    >
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="card bg-white p-4 space-y-2">
+            <div className="h-3 w-28 rounded bg-crema/70" />
+            <div className="h-7 w-24 rounded bg-crema/80" />
+            <div className="h-3 w-32 rounded bg-crema/60" />
+          </div>
+        ))}
+      </section>
+
+      {Array.from({ length: 2 }).map((_, index) => (
+        <div key={index} className="card bg-white p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="h-6 w-52 rounded bg-crema/80" />
+            <div className="h-9 w-40 rounded-xl bg-arena" />
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((__, rowIndex) => (
+              <div key={rowIndex} className="h-16 rounded-2xl border border-crema bg-arena/40" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function AdminContratosPage(props: { searchParams: SearchParams }) {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-azul sm:text-3xl">Contratos de Arrendamiento</h1>
+        <p className="mt-1 text-sm text-piedra">
+          Administre inquilinos y contratos: cree, modifique, termine o elimine registros.
+        </p>
+      </div>
+
+      <Suspense fallback={<AdminContratosSkeleton />}>
+        <AdminContratosContent searchParams={props.searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function AdminContratosContent(props: { searchParams: SearchParams }) {
   await requireAdmin();
 
   const searchParams = await props.searchParams;
@@ -72,14 +122,7 @@ export default async function AdminContratosPage(props: { searchParams: SearchPa
   ];
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-azul sm:text-3xl">Contratos de Arrendamiento</h1>
-        <p className="mt-1 text-sm text-piedra">
-          Administre inquilinos y contratos: cree, modifique, termine o elimine registros.
-        </p>
-      </div>
-
+    <>
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="card bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-piedra">Contratos Vigentes</p>
@@ -394,6 +437,6 @@ export default async function AdminContratosPage(props: { searchParams: SearchPa
           </div>
         )}
       </CollapsibleSection>
-    </div>
+    </>
   );
 }

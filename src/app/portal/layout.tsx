@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { requireTenant } from "@/lib/auth";
 import { signOutAction } from "@/app/ingresar/actions";
 import { Logo } from "@/components/logo";
 import { TechneticaCredit } from "@/components/technetica-credit";
-
-export const instant = false;
 
 export const metadata: Metadata = {
   robots: {
@@ -15,9 +13,26 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function TenantPortalLayout({ children }: { children: ReactNode }) {
+function TenantUserBadgeSkeleton() {
+  return (
+    <span
+      aria-hidden="true"
+      className="hidden h-4 w-36 animate-pulse rounded bg-crema/70 md:inline-block"
+    />
+  );
+}
+
+async function TenantUserBadge() {
   const user = await requireTenant();
 
+  return (
+    <span className="hidden text-xs font-medium text-piedra md:inline-block">
+      {user.email}
+    </span>
+  );
+}
+
+export default function TenantPortalLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-arena">
       <div className="lenca-band h-1.5 w-full" />
@@ -33,9 +48,9 @@ export default async function TenantPortalLayout({ children }: { children: React
           </div>
 
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="hidden text-xs font-medium text-piedra md:inline-block">
-              {user.email}
-            </span>
+            <Suspense fallback={<TenantUserBadgeSkeleton />}>
+              <TenantUserBadge />
+            </Suspense>
             <Link
               href="/"
               className="hidden rounded-xl px-2.5 py-1.5 text-xs font-semibold text-piedra transition hover:bg-arena hover:text-azul sm:inline-flex"

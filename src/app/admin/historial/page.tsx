@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { connection } from "next/server";
+import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth";
 import { getAdminPayments, type AdminPayment } from "@/lib/data";
 import { currentPeriod, formatMoney, MONTHS } from "@/lib/format";
@@ -187,8 +187,65 @@ function buildSpaceGroups(payments: AdminPayment[]): SpacePaymentGroup[] {
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
-export default async function AdminHistorialPage(props: { searchParams: SearchParams }) {
-  await connection();
+function AdminHistorialSkeleton() {
+  return (
+    <div
+      className="space-y-8 animate-pulse"
+      aria-busy="true"
+      aria-label="Cargando historial contable…"
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <div className="h-3.5 w-48 rounded bg-crema/70" />
+          <div className="h-8 w-72 max-w-full rounded-lg bg-crema/80" />
+          <div className="h-4 w-80 max-w-full rounded bg-crema/60" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <div className="h-9 w-28 rounded-xl bg-arena" />
+          <div className="h-9 w-36 rounded-xl bg-arena" />
+        </div>
+      </div>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="card bg-white p-5 space-y-2">
+            <div className="h-3 w-28 rounded bg-crema/70" />
+            <div className="h-7 w-32 rounded bg-crema/80" />
+            <div className="h-3 w-36 rounded bg-crema/60" />
+          </div>
+        ))}
+      </section>
+
+      <div className="card bg-white p-5 space-y-4">
+        <div className="h-5 w-48 rounded bg-crema/80" />
+        <div className="grid grid-cols-6 gap-2 pt-4 sm:grid-cols-12">
+          {Array.from({ length: 12 }).map((_, index) => (
+            <div key={index} className="flex flex-col items-center gap-2">
+              <div className="h-24 w-full rounded-t-lg bg-crema/70" />
+              <div className="h-3 w-6 rounded bg-arena" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="card h-16 bg-white" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function AdminHistorialPage(props: { searchParams: SearchParams }) {
+  return (
+    <Suspense fallback={<AdminHistorialSkeleton />}>
+      <AdminHistorialContent searchParams={props.searchParams} />
+    </Suspense>
+  );
+}
+
+async function AdminHistorialContent(props: { searchParams: SearchParams }) {
   await requireAdmin();
 
   const searchParams = await props.searchParams;

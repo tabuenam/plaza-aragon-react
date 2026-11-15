@@ -16,8 +16,6 @@ import Link from "next/link";
 
 export { buildStructuredData, FAQS };
 
-export const instant = false;
-
 const fallbackSpaces: Space[] = [
   {
     id: "1",
