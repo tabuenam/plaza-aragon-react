@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { connection } from "next/server";
+import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth";
 import { getActiveLeases, getAdminPayments, getAllSpacesWithActiveLease } from "@/lib/data";
 import {
@@ -19,8 +19,74 @@ export const metadata: Metadata = {
   description: "Panel general de control y ocupación de Plaza Aragón.",
 };
 
-export default async function AdminOverviewPage() {
-  await connection();
+function AdminOverviewSkeleton() {
+  return (
+    <div
+      className="space-y-8 animate-pulse"
+      aria-busy="true"
+      aria-label="Cargando panel de control…"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2">
+          <div className="h-3.5 w-48 rounded bg-crema/70" />
+          <div className="h-8 w-72 max-w-full rounded-lg bg-crema/80" />
+          <div className="h-4 w-80 max-w-full rounded bg-crema/60" />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="h-10 w-36 rounded-xl bg-crema/70" />
+          <div className="h-10 w-44 rounded-xl bg-crema/80" />
+        </div>
+      </div>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="card bg-white p-5 space-y-3">
+            <div className="h-3 w-28 rounded bg-crema/70" />
+            <div className="h-8 w-32 rounded bg-crema/80" />
+            <div className="h-3 w-36 rounded bg-crema/60" />
+          </div>
+        ))}
+      </section>
+
+      <section className="space-y-4">
+        <div className="h-6 w-52 rounded bg-crema/80" />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <div key={index} className="card bg-white p-5 space-y-3">
+              <div className="h-5 w-44 rounded bg-crema/80" />
+              <div className="h-20 rounded-xl bg-arena/60" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="h-6 w-56 rounded bg-crema/80" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="card bg-white p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="h-5 w-36 rounded bg-crema/80" />
+                <div className="h-6 w-24 rounded-full bg-arena" />
+              </div>
+              <div className="h-14 rounded-xl bg-arena/50" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default function AdminOverviewPage() {
+  return (
+    <Suspense fallback={<AdminOverviewSkeleton />}>
+      <AdminOverviewContent />
+    </Suspense>
+  );
+}
+
+async function AdminOverviewContent() {
   await requireAdmin();
 
   const cur = currentPeriod();

@@ -1,14 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  isValidExpenseCategory,
+  isValidFinancingMode,
   isValidPaymentType,
   isValidSpaceStatus,
   MAX_BUSINESS_DESCRIPTION_LENGTH,
   MAX_BUSINESS_NAME_LENGTH,
+  MAX_EXPENSE_REASON_LENGTH,
+  MAX_EXPENSE_RECEIPT_BYTES,
   MAX_SPACE_IMAGE_BYTES,
   sanitizeStorageFileName,
   validateAdminPaymentInput,
+  validateExpenseInput,
   validateLeaseInput,
+  validateModuleFinancingInput,
   validatePaymentInput,
   validateSpaceBusinessShowcaseInput,
   validateSpaceUpdateInput,
@@ -274,6 +280,256 @@ describe("domain validation utilities", () => {
           hasFile: true,
         })?.message,
         "Seleccione un local con contrato activo."
+      );
+    });
+  });
+
+  describe("Expense and financing validation", () => {
+    it("accepts valid construction and operating expenses with or without receipt", () => {
+      assert.equal(isValidExpenseCategory("construction"), true);
+      assert.equal(isValidExpenseCategory("operating"), true);
+      assert.equal(isValidExpenseCategory("other"), false);
+
+      assert.equal(
+        validateExpenseInput({
+          spaceId: "space-1",
+          category: "construction",
+          amount: 450000,
+          expenseDate: "2026-11-15",
+          reason: "Inversión inicial acumulada",
+          receiptByteSize: null,
+        }),
+        null
+      );
+
+      assert.equal(
+        validateExpenseInput({
+          spaceId: "space-1",
+          category: "operating",
+          amount: 1200.5,
+          expenseDate: "2026-11-15",
+          reason: "Pintura y electricidad",
+          receiptByteSize: MAX_EXPENSE_RECEIPT_BYTES,
+        }),
+        null
+      );
+    });
+
+    it("rejects invalid expense inputs", () => {
+      assert.equal(
+        validateExpenseInput({
+          spaceId: "",
+          category: "construction",
+          amount: 1000,
+          expenseDate: "2026-11-15",
+          reason: "Cemento",
+        })?.ok,
+        false
+      );
+      assert.equal(
+        validateExpenseInput({
+          spaceId: "space-1",
+          category: "invalid",
+          amount: 1000,
+          expenseDate: "2026-11-15",
+          reason: "Cemento",
+        })?.ok,
+        false
+      );
+      assert.equal(
+        validateExpenseInput({
+          spaceId: "space-1",
+          category: "construction",
+          amount: 0,
+          expenseDate: "2026-11-15",
+          reason: "Cemento",
+        })?.ok,
+        false
+      );
+      assert.equal(
+        validateExpenseInput({
+          spaceId: "space-1",
+          category: "construction",
+          amount: 1000,
+          expenseDate: "15-11-2026",
+          reason: "Cemento",
+        })?.ok,
+        false
+      );
+      assert.equal(
+        validateExpenseInput({
+          spaceId: "space-1",
+          category: "construction",
+          amount: 1000,
+          expenseDate: "2026-11-15",
+          reason: "   ",
+        })?.ok,
+        false
+      );
+      assert.equal(
+        validateExpenseInput({
+          spaceId: "space-1",
+          category: "construction",
+          amount: 1000,
+          expenseDate: "2026-11-15",
+          reason: "x".repeat(MAX_EXPENSE_REASON_LENGTH + 1),
+        })?.ok,
+        false
+      );
+      assert.equal(
+        validateExpenseInput({
+          spaceId: "space-1",
+          category: "construction",
+          amount: 1000,
+          expenseDate: "2026-11-15",
+          reason: "Cemento",
+          receiptByteSize: MAX_EXPENSE_RECEIPT_BYTES + 1,
+        })?.ok,
+        false
+      );
+    });
+
+    it("validates cash and financed module financing profiles", () => {
+      assert.equal(isValidFinancingMode("cash"), true);
+      assert.equal(isValidFinancingMode("financed"), true);
+      assert.equal(isValidFinancingMode("lease"), false);
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "cash",
+          loanAmount: 0,
+          annualInterestRate: 0,
+          termMonths: 0,
+          downPayment: null,
+        }),
+        null
+      );
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "financed",
+          loanAmount: 500000,
+          annualInterestRate: 0,
+          termMonths: 60,
+          downPayment: 100000,
+        }),
+        null
+      );
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "financed",
+          loanAmount: 0,
+          annualInterestRate: 10,
+          termMonths: 60,
+        })?.ok,
+        false
+      );
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "financed",
+          loanAmount: 500000,
+          annualInterestRate: 12,
+          termMonths: 0,
+        })?.ok,
+        false
+      );
+
+      // Operating expense & vacancy bounds
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "cash",
+          loanAmount: 0,
+          annualInterestRate: 0,
+          termMonths: 0,
+          monthlyOperatingExpense: 0,
+          vacancyRatePct: 0,
+        }),
+        null
+      );
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "financed",
+          loanAmount: 500000,
+          annualInterestRate: 10,
+          termMonths: 60,
+          monthlyOperatingExpense: 1500.5,
+          vacancyRatePct: 100,
+        }),
+        null
+      );
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "cash",
+          loanAmount: 0,
+          annualInterestRate: 0,
+          termMonths: 0,
+          monthlyOperatingExpense: -1,
+          vacancyRatePct: 5,
+        })?.ok,
+        false
+      );
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "cash",
+          loanAmount: 0,
+          annualInterestRate: 0,
+          termMonths: 0,
+          monthlyOperatingExpense: Number.NaN,
+          vacancyRatePct: 5,
+        })?.ok,
+        false
+      );
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "cash",
+          loanAmount: 0,
+          annualInterestRate: 0,
+          termMonths: 0,
+          monthlyOperatingExpense: 500,
+          vacancyRatePct: -0.5,
+        })?.ok,
+        false
+      );
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "financed",
+          loanAmount: 500000,
+          annualInterestRate: 10,
+          termMonths: 60,
+          monthlyOperatingExpense: 500,
+          vacancyRatePct: 100.1,
+        })?.ok,
+        false
+      );
+
+      assert.equal(
+        validateModuleFinancingInput({
+          spaceId: "space-1",
+          financingMode: "cash",
+          loanAmount: 0,
+          annualInterestRate: 0,
+          termMonths: 0,
+          monthlyOperatingExpense: 500,
+          vacancyRatePct: Number.NaN,
+        })?.ok,
+        false
       );
     });
   });

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { connection } from "next/server";
+import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth";
 import { getActiveLeases, getAdminPayments, type AdminPayment } from "@/lib/data";
 import {
@@ -37,8 +37,62 @@ function pickPrimaryPayment(list: AdminPayment[]): AdminPayment | undefined {
   return [...list].sort((a, b) => STATUS_PRIORITY[b.status] - STATUS_PRIORITY[a.status])[0];
 }
 
-export default async function AdminPagosPage(props: { searchParams: SearchParams }) {
-  await connection();
+function AdminPagosSkeleton() {
+  return (
+    <div
+      className="space-y-8 animate-pulse"
+      aria-busy="true"
+      aria-label="Cargando verificación de pagos…"
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <div className="h-3.5 w-48 rounded bg-crema/70" />
+          <div className="h-8 w-64 rounded-lg bg-crema/80" />
+          <div className="h-4 w-72 max-w-full rounded bg-crema/60" />
+        </div>
+        <div className="h-10 w-44 rounded-xl bg-crema/80" />
+      </div>
+
+      <div className="card bg-white p-4 space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <div className="h-9 w-36 rounded-xl bg-arena" />
+          <div className="h-9 w-40 rounded-xl bg-arena" />
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="h-9 w-24 rounded-xl bg-crema/60" />
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="card bg-white p-5 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="h-5 w-40 rounded bg-crema/80" />
+              <div className="h-6 w-24 rounded-full bg-arena" />
+            </div>
+            <div className="h-16 rounded-xl bg-arena/50" />
+            <div className="flex gap-2">
+              <div className="h-9 w-28 rounded-xl bg-crema/70" />
+              <div className="h-9 w-28 rounded-xl bg-crema/60" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function AdminPagosPage(props: { searchParams: SearchParams }) {
+  return (
+    <Suspense fallback={<AdminPagosSkeleton />}>
+      <AdminPagosContent searchParams={props.searchParams} />
+    </Suspense>
+  );
+}
+
+async function AdminPagosContent(props: { searchParams: SearchParams }) {
   await requireAdmin();
 
   const searchParams = await props.searchParams;

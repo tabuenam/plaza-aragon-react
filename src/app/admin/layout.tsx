@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { signOutAction } from "@/app/ingresar/actions";
@@ -8,8 +8,6 @@ import { TechneticaCredit } from "@/components/technetica-credit";
 import { AdminBreadcrumbs, AdminNavTabs } from "@/app/admin/admin-nav";
 import { AdminToastProvider } from "@/app/admin/admin-toast";
 
-export const instant = false;
-
 export const metadata: Metadata = {
   robots: {
     index: false,
@@ -17,9 +15,43 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function AdminLayout({ children }: { children: ReactNode }) {
+function AdminUserBadgeSkeleton() {
+  return (
+    <span
+      aria-hidden="true"
+      className="hidden h-4 w-24 animate-pulse rounded bg-crema/70 md:inline-flex"
+    />
+  );
+}
+
+async function AdminUserBadge() {
   const user = await requireAdmin();
 
+  return (
+    <span
+      title={user.email ?? "Administrador"}
+      className="hidden items-center gap-1.5 text-xs font-medium text-piedra/80 md:inline-flex"
+    >
+      <svg
+        className="h-3.5 w-3.5 text-piedra/70"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
+      </svg>
+      Propietario
+    </span>
+  );
+}
+
+export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <AdminToastProvider>
       <div className="flex min-h-dvh flex-col bg-arena">
@@ -42,26 +74,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               >
                 Catálogo público ↗
               </Link>
-              <span
-                title={user.email ?? "Administrador"}
-                className="hidden items-center gap-1.5 text-xs font-medium text-piedra/80 md:inline-flex"
-              >
-                <svg
-                  className="h-3.5 w-3.5 text-piedra/70"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-                Propietario
-              </span>
+              <Suspense fallback={<AdminUserBadgeSkeleton />}>
+                <AdminUserBadge />
+              </Suspense>
               <form action={signOutAction}>
                 <button
                   type="submit"
